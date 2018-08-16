@@ -1,0 +1,13 @@
+name: MethylScore
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - samtools
+  - tabix
+  - bamtools
+  - bedtools
+  - picard
+  - scipy
+  - perl
