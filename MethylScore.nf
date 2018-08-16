@@ -139,7 +139,6 @@ samples = Channel.from(samplesheet.readLines())
 process MethylScore_deduplicate {
     tag "$sampleID"
     publishDir "${params.PROJECT_FOLDER}/01mappings", mode: 'copy'
-// TODO: switch to container solution to resolve dependencies
 
     input:
     file reference
@@ -155,13 +154,19 @@ process MethylScore_deduplicate {
 
     script:
     """
+    mkdir extbin
+    ln -s \$(which samtools) extbin/st
+    ln -s \$(which bamtools) extbin/bt
+    ln -s \$(which bedtools) extbin/bdt
+    ln -s /usr/local/share/picard-2.18.11-0/picard.jar extbin/picard.jar
+    
     ${baseDir}/${params.SCRIPT_PATH}/merge_and_dedup.sh \\
 		1 \\
 		. \\
 		${sampleID} \\
 		${bamFile.join(',')} \\
 		${reference} \\
-		${baseDir}/${params.EXTBIN_PATH} \\
+		./extbin \\
 		${params.FORCE_RERUN} \\
 		${params.REMOVE_INTMED_FILES} \\
 		1024 \\
@@ -361,7 +366,7 @@ process MethylScore_callDMRs {
     """
     mkdir ${chunk}.out
 
-    ${baseDir}/${params.SCRIPT_PATH}/call_DMRs.sh 5 '${baseDir}/${params.BIN_PATH}/dmrs -s ${samples} -r ${chunk} -m ${matrix} -p ${params.MR_FREQ_CHANGE} -i ${params.CLUSTER_MIN_METH_DIFF} -j ${params.CLUSTER_MIN_METH} -v ${params.DMR_MIN_COV} -n ${params.DMR_MIN_C} -w ${params.SLIDING_WINDOW_SIZE} -x ${params.SLIDING_WINDOW_STEP} -z 1 -B ${baseDir}/${params.BIN_PATH}/betabin_model -T ${baseDir}/${params.EXTBIN_PATH}/tbx -E ${baseDir}/${params.EXTBIN_PATH}/bzp -K " " -Y ${baseDir}/${params.SCRIPT_PATH}/pv2qv.py --no-post-process -o ${chunk}.out' ${chunk}.out
+    ${baseDir}/${params.SCRIPT_PATH}/call_DMRs.sh 5 '${baseDir}/${params.BIN_PATH}/dmrs -s ${samples} -r ${chunk} -m ${matrix} -p ${params.MR_FREQ_CHANGE} -i ${params.CLUSTER_MIN_METH_DIFF} -j ${params.CLUSTER_MIN_METH} -v ${params.DMR_MIN_COV} -n ${params.DMR_MIN_C} -w ${params.SLIDING_WINDOW_SIZE} -x ${params.SLIDING_WINDOW_STEP} -z 1 -B ${baseDir}/${params.BIN_PATH}/betabin_model -Y ${baseDir}/${params.SCRIPT_PATH}/pv2qv.py --no-post-process -o ${chunk}.out' ${chunk}.out
     """
 }
 
