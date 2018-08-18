@@ -22,7 +22,6 @@ version = "0.1.13.2-nf"
 // Configurable variables
 params.CLUSTER_PROJECT = "becker_common"
 params.GENOME = "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
-params.SEQTYPE = "PE" // SE
 params.IGV = false
 params.CLUSTER_MIN_METH = 20
 params.CLUSTER_MIN_METH_DIFF = 20
@@ -82,7 +81,6 @@ log.info "BIN_PATH              : ${params.BIN_PATH}"
 log.info "EXTBIN_PATH           : ${params.EXTBIN_PATH}"
 log.info "SCRIPT_PATH           : ${params.SCRIPT_PATH}"
 log.info "---------------------------------------------------"
-log.info "Sequencing Type       : ${params.SEQTYPE}"
 log.info "CLUSTER_MIN_METH      : ${params.CLUSTER_MIN_METH}"
 log.info "CLUSTER_MIN_METH_DIFF : ${params.CLUSTER_MIN_METH_DIFF}"
 log.info "CLUSTER_PROJECT       : ${params.CLUSTER_PROJECT}"
@@ -126,12 +124,11 @@ samples = Channel.from(samplesheet.readLines())
                  .map{line ->
                   list = line.split()
                   sampleID = list[0]
+                  seqType = list[1]
                   bamFile = list[2]
-                  [ sampleID, file(bamFile) ]
+                  [ sampleID, seqType, file(bamFile) ]
                   }
                   .groupTuple()
-
-//TODO: also parse seqtype from samplesheet to handle mixed samples
 
 samples.into { samples_mergeAndDedup; samples_consensus }
 
@@ -143,10 +140,10 @@ process MethylScore_deduplicate {
 
     input:
     file reference
-    set val(sampleID), file(bamFile) from samples_mergeAndDedup
+    set val(sampleID), val(seqType), file(bamFile) from samples_mergeAndDedup
 
     output:
-    set val(sampleID), file('*/split/*/*bam') into bamSplit mode flatten
+    set val(sampleID), val(seqType), file('*/split/*/*bam') into bamSplit mode flatten
     set val(sampleID), file('*/split/*/*fa') into refSplit mode flatten
     file '*/*bam' into dedupBam
     file '*/*bai' into dedupBamIndex
@@ -180,7 +177,7 @@ process MethylScore_callConsensus {
     module 'BamTools/2.4.0-foss-2016a:SAMtools/1.3.1-foss-2016a:Perl/5.22.1-foss-2016a'
 
     input:
-    set val(sampleID), file(bam) from bamSplit
+    set val(sampleID), val(seqType), file(bam) from bamSplit
     set val(sampleID), file(ref) from refSplit
 
     output:
@@ -197,7 +194,8 @@ process MethylScore_callConsensus {
     ${baseDir}/${params.SCRIPT_PATH}/consensus.sh \\
 		2 \\
 		${baseDir}/${params.EXTBIN_PATH} \\
-		${sampleID} ${params.SEQTYPE} \\
+		${sampleID} \\
+		${seqType} \\
 		${params.MIN_QUAL} \\
 		${params.IGNORE_LAST_BP} \\
 		${params.IGNORE_FIRST_BP} \\
