@@ -199,11 +199,14 @@ process MethylScore_callConsensus {
 // TODO: currently, the reference genome is split in each iteration which could probably be avoided by channeling pre-split chromosomes together with bams using a .join() call
 // TODO: chromosome names should be stored in a indexed hashmap, to streamline the sorting steps below
     """
+    mkdir extbin
+    ln -s \$(which MethylScore.pl) extbin/MethylScore.pl
+
     mkdir --parents ${sampleID}/${chromosome}
 
     ${baseDir}/${params.SCRIPT_PATH}/consensus.sh \\
 		2 \\
-		${baseDir}/${params.EXTBIN_PATH} \\
+		extbin \\
 		${sampleID} \\
 		${seqType} \\
 		${params.MIN_QUAL} \\
