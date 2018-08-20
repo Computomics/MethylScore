@@ -200,13 +200,13 @@ process MethylScore_callConsensus {
 // TODO: chromosome names should be stored in a indexed hashmap, to streamline the sorting steps below
     """
     mkdir extbin
-    ln -s \$(which MethylScore.pl) extbin/MethylScore.pl
+    ln -s \$(which MethylExtract.pl) extbin/MethylExtract.pl
 
     mkdir --parents ${sampleID}/${chromosome}
 
     ${baseDir}/${params.SCRIPT_PATH}/consensus.sh \\
 		2 \\
-		extbin \\
+		./extbin \\
 		${sampleID} \\
 		${seqType} \\
 		${params.MIN_QUAL} \\
@@ -214,8 +214,7 @@ process MethylScore_callConsensus {
 		${params.IGNORE_FIRST_BP} \\
 		. \\
 		${sampleID}/${chromosome} \\
-		${params.REMOVE_INTMED_FILES} \\
-		samtools
+		${params.REMOVE_INTMED_FILES}
 
     mv ${sampleID}/${chromosome}/allC.output ${sampleID}/${chromosome}/${sampleID}.${chromosome}.allC.output
     """

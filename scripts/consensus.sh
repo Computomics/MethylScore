@@ -52,8 +52,8 @@ perl $extbin_path/MethylExtract.pl \
     context=ALL \
     bedOut=N wigOut=N \
     $sam_flags \
-    outDir=$outdir \
-    samtools=$samtools_cmd
+    outDir=$outdir
+#\    samtools=$samtools_cmd
 
 
 ### STEP 2: sort and merge output data
