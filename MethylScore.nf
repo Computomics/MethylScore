@@ -130,7 +130,11 @@ samples = Channel.from(samplesheet.readLines())
                   }
                   .groupTuple()
 
-samples.into { samples_mergeAndDedup; samples_consensus }
+// WIP : nextflow method to split reference by chromosome
+//chrfa = Channel.from(reference)
+//	       .splitFasta( record: [id: true, seqString: true] )
+//	       .collect()
+//	       .subscribe{ record -> println record.id }
 
 process MethylScore_deduplicate {
     tag "$sampleID"
@@ -140,11 +144,11 @@ process MethylScore_deduplicate {
 
     input:
     file reference
-    set val(sampleID), val(seqType), file(bamFile) from samples_mergeAndDedup
+    set val(sampleID), val(seqType), file(bamFile) from samples
 
     output:
-    set val(sampleID), val(seqType), file('*/split/*/*bam') into bamSplit mode flatten
-    set val(sampleID), file('*/split/*/*fa') into refSplit mode flatten
+    set val(sampleID), val(seqType) into flagW mode flatten
+    set val(sampleID), file('*/split/*/*bam'), file('*/split/*/*fa') into chrSplit mode flatten
     file '*/*bam' into dedupBam
     file '*/*bai' into dedupBamIndex
     file '*/*tsv' into readStats
@@ -177,8 +181,7 @@ process MethylScore_callConsensus {
     module 'BamTools/2.4.0-foss-2016a:SAMtools/1.3.1-foss-2016a:Perl/5.22.1-foss-2016a'
 
     input:
-    set val(sampleID), val(seqType), file(bam) from bamSplit
-    set val(sampleID), file(ref) from refSplit
+    set val(sampleID), file(bam), file(ref), val(flagW) from chrSplit.combine(flagW.unique(), by: 0)
 
     output:
     set val(sampleID), file("*/*/${sampleID}.${chromosome}.allC.output"), val(chromosome) into consensus
