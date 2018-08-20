@@ -148,7 +148,7 @@ process MethylScore_deduplicate {
 
     output:
     set val(sampleID), val(seqType) into flagW mode flatten
-    set val(sampleID), file('*/split/*/*bam'), file('*/split/*/*fa') into chrSplit mode flatten
+    set val(sampleID), file('*/split/*/*bam'), file('*/split/*/*fa') into fileSplit mode flatten
     file '*/*bam' into dedupBam
     file '*/*bai' into dedupBamIndex
     file '*/*tsv' into readStats
@@ -175,20 +175,24 @@ process MethylScore_deduplicate {
     """
 }
 
+//get chromosomeID
+fileSplit
+ .map { chrSplit ->
+	chrSplit << chrSplit[1].baseName.split("_")[-1] }
+ .set { chrSplit }
+
 process MethylScore_callConsensus {
     tag "$bam"
     publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy'
     module 'BamTools/2.4.0-foss-2016a:SAMtools/1.3.1-foss-2016a:Perl/5.22.1-foss-2016a'
 
     input:
-    set val(sampleID), file(bam), file(ref), val(flagW) from chrSplit.combine(flagW.unique(), by: 0)
+    set val(sampleID), file(bam), file(ref), val(chromosome), val(seqType) from chrSplit.combine(flagW.unique(), by: 0)
 
     output:
     set val(sampleID), file("*/*/${sampleID}.${chromosome}.allC.output"), val(chromosome) into consensus
 
     script:
-    // extract the chromosome ID, as we need it for grouping the tuple lateron
-    chromosome = bam.baseName.split("_")[-1]
 // TODO: currently, the reference genome is split in each iteration which could probably be avoided by channeling pre-split chromosomes together with bams using a .join() call
 // TODO: chromosome names should be stored in a indexed hashmap, to streamline the sorting steps below
     """
@@ -216,10 +220,10 @@ process MethylScore_chromosomalmatrix {
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    set val(sampleID), file(pile), val(chromosome) from consensus.groupTuple(by: 2, sort: true)
+    set val(sampleID), file(pile), val(chromosome) from consensus.groupTuple(by: 2, sort: 'true')
 
     output:
-    file('*tsv') into matrix
+    set val(chromosome), file("genome_matrix.${chromosome}.tsv") into splitMatrix 
     val(sampleID) into idx
 
     script:
@@ -235,30 +239,32 @@ process MethylScore_chromosomalmatrix {
 // TODO sorting like this is probably unnecessary and correct order of samples can be handled more elegantly in the .collectFile() call below
 }
 
+splitMatrix
+ .transpose()
+ .toSortedList({a, b -> a[0] <=> b[0]})
+ .flatten()
+ .buffer(size:1, skip:1)
+ .set { matrix }
+
 idx
  .flatten()
  .unique()
  .toSortedList().withIndex().set{ indexedSamples }
 
 process MethylScore_genomematrix {
-    tag "$matrix"
+    tag "$matrixlist"
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    file(matrix) from matrix.collectFile(name:'matrixWG.tsv')
+    file(matrixlist) from matrix.collect()
 
     output:
-    file('*tsv') into matrixWG
-    file('*header') into matrixheader
+    file('genome_matrix.tsv') into matrixWG
 
     script:
     """
-    head -n1 ${matrix} > genome_matrix.header
-
-    sort -k1,1V -k2,2n ${matrix} | sed '/^#/d' > matrix
-    cat genome_matrix.header matrix > genome_matrix.tsv
+    cat ${matrixlist} | sed '1!{/^#/d;}' > genome_matrix.tsv
     """
-// TODO sorting should be handled in groovy, not bash
 }
 
 matrixWG.into{matrixWG_MRs; matrixWG_igv; matrixWG_DMRs}
