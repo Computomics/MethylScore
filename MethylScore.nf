@@ -139,7 +139,6 @@ samples = Channel.from(samplesheet.readLines())
 process MethylScore_deduplicate {
     tag "$sampleID"
     publishDir "${params.PROJECT_FOLDER}/01mappings", mode: 'copy'
-    module 'BamTools/2.4.0-foss-2016a:SAMtools/1.3.1-foss-2016a:Java/1.8.0_112'
 // TODO: switch to container solution to resolve dependencies
 
     input:
@@ -184,7 +183,6 @@ fileSplit
 process MethylScore_callConsensus {
     tag "$bam"
     publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy'
-    module 'BamTools/2.4.0-foss-2016a:SAMtools/1.3.1-foss-2016a:Perl/5.22.1-foss-2016a'
 
     input:
     set val(sampleID), file(bam), file(ref), val(chromosome), val(seqType) from chrSplit.combine(flagW.unique(), by: 0)
@@ -304,23 +302,23 @@ process MethylScore_callMRs {
 MRs.into{MRs_igv; MRs_split}
 
 process MethylScore_igv {
-  tag "batchsize:${params.MR_BATCH_SIZE}"
-  publishDir "${params.PROJECT_FOLDER}/igv", mode: 'copy'
+    tag "batchsize:${params.MR_BATCH_SIZE}"
+    publishDir "${params.PROJECT_FOLDER}/igv", mode: 'copy'
 
-  input:
-  file(bed) from MRs_igv.collect()
-  file(matrixWG) from matrixWG_igv
+    input:
+    file(bed) from MRs_igv.collect()
+    file(matrixWG) from matrixWG_igv
 
-  output:
-  file('*') into igv
+    output:
+    file('*') into igv
 
-  when:
-  params.IGV == true
-
-  script:
-  """
-  ${baseDir}/${params.SCRIPT_PATH}/igv.sh "" ${baseDir}/${params.SCRIPT_PATH} ${matrixWG} . ${bed}
-  """
+    when:
+    params.IGV == true
+ 
+    script:
+    """
+    ${baseDir}/${params.SCRIPT_PATH}/igv.sh "" ${baseDir}/${params.SCRIPT_PATH} ${matrixWG} . ${bed}
+    """
 }
 
 process MethylScore_splitMRs {
@@ -348,7 +346,6 @@ process MethylScore_splitMRs {
 process MethylScore_callDMRs {
     tag "$chunk"
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
-    module 'Python/2.7.11-foss-2016a'
 
     input:
     file(matrix) from matrixWG_DMRs
@@ -371,7 +368,6 @@ process MethylScore_callDMRs {
 process MethylScore_mergeDMRs {
     tag "$segments"
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
-    module 'Python/2.7.11-foss-2016a'
 
     input:
     file(segments) from difs.collectFile(name:'segments.dif')
