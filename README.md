@@ -8,9 +8,9 @@ git clone https://github.com/Gregor-Mendel-Institute/MethylScore-nf
 
 module load Nextflow/0.31.1-Java-10.0.2
 
-nextflow /path/to/MethylScore.nf --SAMPLE_SHEET=/path/to/samplesheet.tsv --SEQTYPE="PE" --GENOME=/path/to/reference_genome.fa
+nextflow /path/to/MethylScore.nf --SAMPLE_SHEET=/path/to/samplesheet.tsv --GENOME=/path/to/reference_genome.fa
 ```
-Currently, SEQTYPE defaults to PE and the reference genome defaults to TAIR9. Please change accordingly.
+Currently, the reference genome defaults to TAIR9. Please change accordingly if working with other organisms.
 
 Pipeline parameters are included in the nextflow script itself and are initialized to their default values.
 Currently, passing a config file is not supported, but individual parameters can be passed to the pipeline.
