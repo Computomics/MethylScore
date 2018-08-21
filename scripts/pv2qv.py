@@ -17,6 +17,7 @@ import scipy as SP
 import sys
 import scipy.stats as st
 from shutil import copyfile
+from builtins import range
 
 
 def estimate_q_values(PV,m=None,pi=1.0):
@@ -50,7 +51,7 @@ def estimate_q_values(PV,m=None,pi=1.0):
     QV_ = pi * m/lPV* PV
     QV_[-1] = min(QV_[-1],1.0)
     #4. update estimate
-    for i in xrange(lPV-2,-1,-1):
+    for i in range(lPV-2,-1,-1):
         QV_[i] = min(pi*m*PV[i]/(i+1.0),QV_[i+1])
     #5. invert sorting
     QV = SP.zeros_like(PV)
@@ -61,7 +62,7 @@ def estimate_q_values(PV,m=None,pi=1.0):
 if __name__ == '__main__':
 
     if len(sys.argv)<3:
-        print "p2qv pv.csv qv.csv"
+        print("p2qv pv.csv qv.csv")
         sys.exit(1)
 
     pv_file = sys.argv[1]
@@ -69,9 +70,9 @@ if __name__ == '__main__':
 
     M = SP.loadtxt(pv_file,dtype='str')
     if len(M.shape)<2:
-		#M= M[:,SP.newaxis]
-		copyfile(pv_file, qv_file)
-		sys.exit()
+        #M= M[:,SP.newaxis]
+        copyfile(pv_file, qv_file)
+        sys.exit()
     
     R = SP.empty([M.shape[0],M.shape[1]+1],dtype='object')
     R[:,0:-1] = M
