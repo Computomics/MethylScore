@@ -159,13 +159,8 @@ process MethylScore_deduplicate {
     ln -s \$(which bamtools) extbin/bt
     ln -s \$(which bedtools) extbin/bdt
 
-    if [[ \$(which picard) ]]; then
-    	PICARD_PATH="\$(dirname \$(readlink -f \$(which picard)))";
-    elif [[ \$(which picard.jar) ]]; then
-    	PICARD_PATH="\$(dirname \$(readlink -f \$(which picard.jar)))";
-    fi
 
-    ln -s \${PICARD_PATH}/picard.jar extbin/picard.jar
+    ln -s ${PICARD_PATH}/picard.jar extbin/picard.jar
     
     ${baseDir}/${params.SCRIPT_PATH}/merge_and_dedup.sh \\
 		1 \\
