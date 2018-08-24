@@ -5,7 +5,7 @@
 ========================================================================================
  Nextflow implementation of Computomics' MethylScore Pipeline
  #### Homepage / Documentation
-https://github.com/Gregor-Mendel-Institute/MethylScore-nf
+ https://github.com/Gregor-Mendel-Institute/MethylScore-nf
  #### Author
  Patrick Hüther <patrick.huether@gmi.oeaw.ac.at>
 ----------------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ version = "0.1.13.2-nf"
 // Configurable variables
 params.CLUSTER_PROJECT = "becker_common"
 params.GENOME = "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
-params.IGV = false
+params.IGV = 0
 params.CLUSTER_MIN_METH = 20
 params.CLUSTER_MIN_METH_DIFF = 20
 params.DESERT_SIZE = 100
@@ -55,6 +55,8 @@ params.SAMPLE_SHEET = "./samplesheet.tsv"
 params.SCRIPT_PATH = "scripts"
 params.BIN_PATH = "bin"
 params.EXTBIN_PATH = "bin_ext"
+
+params.DEBUG = false
 
 // ToDo check parameters for sanity
 //if( params.CLUSTER_MIN_METH ){
@@ -128,78 +130,146 @@ samples = Channel.from(samplesheet.readLines())
                   bamFile = list[2]
                   [ sampleID, seqType, file(bamFile) ]
                   }
-                  .groupTuple()
 
-// WIP : nextflow method to split reference by chromosome
-//chrfa = Channel.from(reference)
-//	       .splitFasta( record: [id: true, seqString: true] )
-//	       .collect()
-//	       .subscribe{ record -> println record.id }
+/*
+ * Create a channel for the reference genome and split it by chromosome
+ */
 
-process MethylScore_deduplicate {
-    tag "$sampleID"
+refSplit = Channel.fromPath(reference)
+	       .splitFasta( record: [id: true, text: true] )
+
+process MethylScore_filterQC {
+    tag "$bamFile"
     publishDir "${params.PROJECT_FOLDER}/01mappings", mode: 'copy'
 
     input:
-    file reference
     set val(sampleID), val(seqType), file(bamFile) from samples
 
     output:
-    set val(sampleID), val(seqType) into flagW mode flatten
-    set val(sampleID), file('*/split/*/*bam'), file('*/split/*/*fa') into fileSplit mode flatten
-    file '*/*bam' into dedupBam
-    file '*/*bai' into dedupBamIndex
-    file '*/*tsv' into readStats
-    file '*/*txt' into dedupMetrics
-
+    set val(sampleID), val(seqType), file('*passQC.bam') into passQC
+ 
     script:
     """
-    mkdir extbin
-    ln -s \$(which samtools) extbin/st
-    ln -s \$(which bamtools) extbin/bt
-    ln -s \$(which bedtools) extbin/bdt
-
-
-    ln -s ${PICARD_PATH}/picard.jar extbin/picard.jar
-    
-    ${baseDir}/${params.SCRIPT_PATH}/merge_and_dedup.sh \\
-		1 \\
-		. \\
-		${sampleID} \\
-		${bamFile.join(',')} \\
-		${reference} \\
-		./extbin \\
-		${params.FORCE_RERUN} \\
-		${params.REMOVE_INTMED_FILES} \\
-		1024 \\
-		bamtools,split \\
-		samtools \\
-		${params.STATISTICS} \\
-		${baseDir}/${params.SCRIPT_PATH} \\
-		${params.DO_DEDUP} \\
-		"${params.ROI}"
+    samtools view -bh -F 0x200 -F 0x4 -o ${bamFile.baseName}.passQC.bam ${bamFile}
     """
 }
 
-//get chromosomeID
-fileSplit
- .map { chrSplit ->
-	chrSplit << chrSplit[1].baseName.split("_")[-1] }
- .set { chrSplit }
+process MethylScore_mergeReplicates {
+    tag "$sampleID: ${bamFile.collect().size()} replicate(s)"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(bamFile) from passQC.groupTuple()
+
+    output:
+    set val(sampleID), val(seqType), file('*passQC.bam') into merged
+
+    script:
+    if( bamFile.toList().size() != 1 )
+       """
+       java -Xmx1024m -Xms256m -XX:ParallelGCThreads=1 -jar ${PICARD_PATH}/picard.jar \\
+        MergeSamFiles \\
+    	  I=${bamFile.join(' I=')} \\
+    	  O=${sampleID}.passQC.bam \\
+    	  USE_THREADING=false
+       """
+    else
+       """
+       mv ${bamFile} ${sampleID}.passQC.bam
+       """
+}
+
+if(params.DO_DEDUP) {
+
+ process MethylScore_deduplicate {
+    tag "$sampleID"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(bamFile) from merged
+
+    output:
+    set val(sampleID), val(seqType), file('*passQC.dedup.bam') into (dedup, stats)
+    file ('dedup.metrics.txt')
+
+    script:
+    """
+    java -Xmx1024m -Xms256m -XX:ParallelGCThreads=1 -jar ${PICARD_PATH}/picard.jar \\
+      MarkDuplicates \\
+        I=${sampleID}.passQC.bam \\
+        O=${sampleID}.passQC.dedup.bam \\
+        METRICS_FILE=dedup.metrics.txt
+        REMOVE_DUPLICATES=true \\
+        MAX_FILE_HANDLES=1 \\
+        TMP_DIR=\$PWD \\
+	VALIDATION_STRINGENCY=LENIENT
+    """
+ } 
+} else {
+
+dedup = merged
+
+}
+
+process MethylScore_readStatistics {
+    tag "$sampleID"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(bamFile) from stats
+
+    output:
+    file ('*') into readStats
+
+    when:
+    params.STATISTICS == 1
+   
+    script:
+    """
+    ${baseDir}/${params.SCRIPT_PATH}/read_stats.sh \\
+		${sampleID} \\
+                ${bamFile} \\
+                ${params.ROI}
+
+    if [[ ! -z "${params.ROI}" ]]; then
+       ${baseDir}/${params.SCRIPT_PATH}/cov_stats.sh \\
+                ${sampleID} \\
+                ${bamFile} \\
+                ${params.ROI}
+
+    fi
+    """
+}
+
+process MethylScore_splitBams {
+    tag "$sampleID:$chromosome.id"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${chromosome.id}", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(bamFile) from dedup
+    each chromosome from refSplit
+
+    output:
+    set val(sampleID), val(seqType), file('*bam'), val("${chromosome.id}"), val("${chromosome.text}") into chrSplit
+
+    script:
+    """
+    samtools index ${bamFile}
+    samtools view -b ${bamFile} ${chromosome.id} > ${bamFile.baseName}_${chromosome.id}.bam
+    """
+}
 
 process MethylScore_callConsensus {
-    tag "$bam"
+    tag "$sampleID:$chromosome"
     publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy'
 
     input:
-    set val(sampleID), file(bam), file(ref), val(chromosome), val(seqType) from chrSplit.combine(flagW.unique(), by: 0)
+    set val(sampleID), val(seqType), file(splitBam), val(chromosome), file('reference.fa') from chrSplit
 
     output:
     set val(sampleID), file("*/*/${sampleID}.${chromosome}.allC.output"), val(chromosome) into consensus
 
     script:
-// TODO: currently, the reference genome is split in each iteration which could probably be avoided by channeling pre-split chromosomes together with bams using a .join() call
-// TODO: chromosome names should be stored in a indexed hashmap, to streamline the sorting steps below
     """
     mkdir extbin
     ln -s \$(which MethylExtract.pl) extbin/MethylExtract.pl
@@ -210,7 +280,7 @@ process MethylScore_callConsensus {
 		2 \\
 		./extbin \\
 		${sampleID} \\
-		${seqType} \\
+		${seqType[0]} \\
 		${params.MIN_QUAL} \\
 		${params.IGNORE_LAST_BP} \\
 		${params.IGNORE_FIRST_BP} \\
@@ -221,6 +291,8 @@ process MethylScore_callConsensus {
     mv ${sampleID}/${chromosome}/allC.output ${sampleID}/${chromosome}/${sampleID}.${chromosome}.allC.output
     """
 }
+
+if(!params.DEBUG) {
 
 process MethylScore_chromosomalmatrix {
     tag "$chromosome"
@@ -399,4 +471,6 @@ process MethylScore_mergeDMRs {
 		${params.HDMR_FOLD_CHANGE} \\
 		${params.REMOVE_INTMED_FILES}
     """
+}
+
 }
