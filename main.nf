@@ -500,5 +500,7 @@ process MethylScore_mergeDMRs {
      ${params.DMR_MIN_C} \\
      ${params.HDMR_FOLD_CHANGE} \\
      ${params.REMOVE_INTMED_FILES}
+
+    sort -k1,1V -k2 -o DMRs.bed DMRs.bed
     """
 }
