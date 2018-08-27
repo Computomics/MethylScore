@@ -5,7 +5,7 @@
 ========================================================================================
  Nextflow implementation of Computomics' MethylScore Pipeline
  #### Homepage / Documentation
-https://github.com/Gregor-Mendel-Institute/MethylScore-nf
+ https://github.com/Gregor-Mendel-Institute/MethylScore-nf
  #### Author
  Patrick Hüther <patrick.huether@gmi.oeaw.ac.at>
 ----------------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ version = "0.1.13.2-nf"
 // Configurable variables
 params.CLUSTER_PROJECT = "becker_common"
 params.GENOME = "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
-params.IGV = false
+params.IGV = 0
 params.CLUSTER_MIN_METH = 20
 params.CLUSTER_MIN_METH_DIFF = 20
 params.DESERT_SIZE = 100
@@ -55,6 +55,8 @@ params.SAMPLE_SHEET = "./samplesheet.tsv"
 params.SCRIPT_PATH = "scripts"
 params.BIN_PATH = "bin"
 params.EXTBIN_PATH = "bin_ext"
+
+params.DEBUG = false
 
 // ToDo check parameters for sanity
 //if( params.CLUSTER_MIN_METH ){
@@ -128,97 +130,177 @@ samples = Channel.from(samplesheet.readLines())
                   bamFile = list[2]
                   [ sampleID, seqType, file(bamFile) ]
                   }
-                  .groupTuple()
 
-// WIP : nextflow method to split reference by chromosome
-//chrfa = Channel.from(reference)
-//	       .splitFasta( record: [id: true, seqString: true] )
-//	       .collect()
-//	       .subscribe{ record -> println record.id }
+/*
+ * Create a channel for the reference genome and split it by chromosome
+ */
 
-process MethylScore_deduplicate {
-    tag "$sampleID"
+refSplit = Channel.fromPath(reference)
+	       .splitFasta( record: [id: true, text: true] )
+
+process MethylScore_filterQC {
+    tag "$bamFile"
     publishDir "${params.PROJECT_FOLDER}/01mappings", mode: 'copy'
 
     input:
-    file reference
     set val(sampleID), val(seqType), file(bamFile) from samples
 
     output:
-    set val(sampleID), val(seqType) into flagW mode flatten
-    set val(sampleID), file('*/split/*/*bam'), file('*/split/*/*fa') into fileSplit mode flatten
-    file '*/*bam' into dedupBam
-    file '*/*bai' into dedupBamIndex
-    file '*/*tsv' into readStats
-    file '*/*txt' into dedupMetrics
-
+    set val(sampleID), val(seqType), file('*passQC.bam') into passQC
+ 
     script:
     """
-    mkdir extbin
-    ln -s \$(which samtools) extbin/st
-    ln -s \$(which bamtools) extbin/bt
-    ln -s \$(which bedtools) extbin/bdt
-
-
-    ln -s ${PICARD_PATH}/picard.jar extbin/picard.jar
-    
-    ${baseDir}/${params.SCRIPT_PATH}/merge_and_dedup.sh \\
-		1 \\
-		. \\
-		${sampleID} \\
-		${bamFile.join(',')} \\
-		${reference} \\
-		./extbin \\
-		${params.FORCE_RERUN} \\
-		${params.REMOVE_INTMED_FILES} \\
-		1024 \\
-		bamtools,split \\
-		samtools \\
-		${params.STATISTICS} \\
-		${baseDir}/${params.SCRIPT_PATH} \\
-		${params.DO_DEDUP} \\
-		"${params.ROI}"
+    samtools view -bh -F 0x200 -F 0x4 -o ${bamFile.baseName}.passQC.bam ${bamFile}
     """
 }
 
-//get chromosomeID
-fileSplit
- .map { chrSplit ->
-	chrSplit << chrSplit[1].baseName.split("_")[-1] }
- .set { chrSplit }
-
-process MethylScore_callConsensus {
-    tag "$bam"
-    publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy'
+process MethylScore_mergeReplicates {
+    tag "$sampleID: ${bamFile.collect().size()} replicate(s)"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), file(bam), file(ref), val(chromosome), val(seqType) from chrSplit.combine(flagW.unique(), by: 0)
+    set val(sampleID), val(seqType), file(bamFile) from passQC.groupTuple()
 
     output:
-    set val(sampleID), file("*/*/${sampleID}.${chromosome}.allC.output"), val(chromosome) into consensus
+    set val(sampleID), val(seqType), file('*passQC.bam') into merged
 
     script:
-// TODO: currently, the reference genome is split in each iteration which could probably be avoided by channeling pre-split chromosomes together with bams using a .join() call
-// TODO: chromosome names should be stored in a indexed hashmap, to streamline the sorting steps below
+    if( bamFile.toList().size() != 1 )
+       """
+       mkdir tmp
+
+       java -Xmx1024m -Xms256m -Djava.io.tmpdir=tmp -XX:ParallelGCThreads=1 -jar ${PICARD_PATH}/picard.jar \\
+        MergeSamFiles \\
+    	  I=${bamFile.join(' I=')} \\
+    	  O=${sampleID}.passQC.bam \\
+    	  USE_THREADING=false
+       """
+    else
+       """
+       mv ${bamFile} ${sampleID}.passQC.bam
+       """
+}
+
+if(params.DO_DEDUP) {
+
+ process MethylScore_deduplicate {
+    tag "$sampleID"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(bamFile) from merged
+
+    output:
+    set val(sampleID), val(seqType), file('*passQC.dedup.bam') into (dedup, stats)
+    file ('dedup.metrics.txt')
+
+    script:
     """
-    mkdir extbin
-    ln -s \$(which MethylExtract.pl) extbin/MethylExtract.pl
+    mkdir tmp
+    java -Xmx1024m -Xms256m -Djava.io.tmpdir=tmp -XX:ParallelGCThreads=1 -jar ${PICARD_PATH}/picard.jar \\
+      MarkDuplicates \\
+        I=${sampleID}.passQC.bam \\
+        O=${sampleID}.passQC.dedup.bam \\
+        METRICS_FILE=dedup.metrics.txt
+        REMOVE_DUPLICATES=true \\
+        MAX_FILE_HANDLES=1 \\
+        TMP_DIR=\$PWD \\
+	VALIDATION_STRINGENCY=LENIENT
+    """
+ } 
+} else {
 
-    mkdir --parents ${sampleID}/${chromosome}
+dedup = merged
 
-    ${baseDir}/${params.SCRIPT_PATH}/consensus.sh \\
-		2 \\
-		./extbin \\
+}
+
+process MethylScore_readStatistics {
+    tag "$sampleID"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(bamFile) from stats
+
+    output:
+    file ('*') into readStats
+
+    when:
+    params.STATISTICS == 1
+   
+    script:
+    """
+    ${baseDir}/${params.SCRIPT_PATH}/read_stats.sh \\
 		${sampleID} \\
-		${seqType} \\
-		${params.MIN_QUAL} \\
-		${params.IGNORE_LAST_BP} \\
-		${params.IGNORE_FIRST_BP} \\
-		. \\
-		${sampleID}/${chromosome} \\
-		${params.REMOVE_INTMED_FILES}
+                ${bamFile} \\
+                ${params.ROI}
 
-    mv ${sampleID}/${chromosome}/allC.output ${sampleID}/${chromosome}/${sampleID}.${chromosome}.allC.output
+    if [[ ! -z "${params.ROI}" ]]; then
+       ${baseDir}/${params.SCRIPT_PATH}/cov_stats.sh \\
+                ${sampleID} \\
+                ${bamFile} \\
+                ${params.ROI}
+
+    fi
+    """
+}
+
+process MethylScore_splitBams {
+    tag "$sampleID:$chromosome.id"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${chromosome.id}", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(bamFile) from dedup
+    each chromosome from refSplit
+
+    output:
+    set val(sampleID), val(seqType), file('*bam'), val("${chromosome.id}"), val("${chromosome.text}") into chrSplit
+
+    script:
+    """
+    samtools index ${bamFile}
+    samtools view -b ${bamFile} ${chromosome.id} > ${bamFile.baseName}_${chromosome.id}.bam
+    """
+}
+
+process MethylScore_callConsensus {
+    tag "$sampleID:$chromosome"
+    publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosome}", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(splitBam), val(chromosome), file('reference.fa') from chrSplit
+//    each context from (['CG','CHG','CHH']) // TODO: check whether parallelizing could be beneficial for performance here
+
+    output:
+    set val(sampleID), file('*allC.output'), val(chromosome) into consensus
+
+    script:
+    flagW = ( seqType[0] == "PE" ? "flagW=99,147 flagC=83,163" : "flagW=0 flagC=16" )
+    """
+    MethylExtract.pl \\
+     seq='.' \\
+     inDir='.' \\
+     peOverlap=Y \\
+     delDup=N \\
+     minQ=${params.MIN_QUAL} \\
+     methNonCpGs=0 \\
+     varFraction=0.01 \\
+     maxPval=0.01 \\
+     p=1 \\
+     chromDiv=100 \\
+     memNumReads=1000 \\
+     FirstIgnor=${params.IGNORE_FIRST_BP} \\
+     LastIgnor=${params.IGNORE_LAST_BP} \\
+     minDepthMeth=1 \\
+     context=ALL \\
+     bedOut=N wigOut=N \\
+     ${flagW}
+
+    for context in CG CHG CHH; do
+     sort -k1,1 -k2,2n \$context.output |
+     awk -vi=\$context -vs=$sampleID '\$0!~/^#/{OFS="\\t"; \$1=s "\\t" \$1; \$3=i "." \$3; print \$0}' > ${sampleID}.${chromosome}.\$context.output.tmp;
+    done
+    
+    sort -m -k2,2 -k3,3n *.output.tmp > ${sampleID}.${chromosome}.allC.output
     """
 }
 
@@ -227,23 +309,21 @@ process MethylScore_chromosomalmatrix {
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    set val(sampleID), file(pile), val(chromosome) from consensus.groupTuple(by: 2, sort: 'true')
+    set val(sampleID), file(allC), val(chromosome) from consensus.groupTuple(by: 2, sort: 'true')
 
     output:
-    set val(chromosome), file("genome_matrix.${chromosome}.tsv") into splitMatrix 
+    set val(chromosome), file("${chromosome}.genome_matrix.tsv") into splitMatrix
     val(sampleID) into idx
 
     script:
     """
-    for i in ${pile}; do
-    	echo -e \$(basename \$i | cut -f1 -d.)'\t'\$i >> samples.txt
+    idx=4 
+    for i in ${sampleID.join(' ')}; do
+    	echo -e \$i'\t'\$i'.'${chromosome}'.allC.output' >> samples.txt
     done
-    sort samples.txt > sorted_samples.txt
 
-    ${baseDir}/${params.SCRIPT_PATH}/generate_matrix.sh 3 ${baseDir}/${params.BIN_PATH} sorted_samples.txt . ${chromosome}
+    generate_genome_matrix -s samples.txt -i mxX -o ${chromosome}.genome_matrix.tsv
     """
-// TODO cutting filenames like this is not robust against samplenames containing dots
-// TODO sorting like this is probably unnecessary and correct order of samples can be handled more elegantly in the .collectFile() call below
 }
 
 splitMatrix
@@ -253,62 +333,67 @@ splitMatrix
  .buffer(size:1, skip:1)
  .set { matrix }
 
-idx
- .flatten()
- .unique()
- .toSortedList().withIndex().set{ indexedSamples }
-
 process MethylScore_genomematrix {
-    tag "$matrixlist"
+    tag "$matrixWG"
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    file(matrixlist) from matrix.collect()
+//    file(matrixWG) from splitMatrix.collectFile(name: 'genome_matrix.tsv')
+    file(matrixWG) from matrix.collect()
 
     output:
-    file('genome_matrix.tsv') into matrixWG
+    file('genome_matrix.tsv') into (matrixWG_MRs, matrixWG_igv, matrixWG_DMRs)
 
     script:
     """
-    cat ${matrixlist} | sed '1!{/^#/d;}' > genome_matrix.tsv
+    cat ${matrixWG} | sed '1!{/^#/d;}' > genome_matrix.tsv
     """
+//    sed -i '1!{/^#/d;}' ${matrixWG} > genome_matrix.tsv
 }
 
-matrixWG.into{matrixWG_MRs; matrixWG_igv; matrixWG_DMRs}
+idx
+ .flatten()
+ .unique()
+ .toList()
+ .into { indexedSamples_MRs; indexedSamples_splitting }
 
 process MethylScore_callMRs {
-    tag "$sample"
-    publishDir "${params.PROJECT_FOLDER}/04MRs", mode: 'copy'
+    tag "$sampleID"
+    publishDir "${params.PROJECT_FOLDER}/04MRs/${sampleID[0]}", mode: 'copy'
 
     input:
     file(matrixWG) from matrixWG_MRs
-    each sample from indexedSamples
+    each sampleID from indexedSamples_MRs.withIndex()
 
     output:
-    file("${sample[0]}/${sample[1]+4}.${sample[0]}.MRs.bed") into MRs
-    file('*/*.params') into hmmparams
-    file('*/*.tsv') into MRstats
+    file('*MRs.bed') into (MRs_igv, MRs_splitting)
+    file('*.params') into hmmparams
+    file('*.tsv') into MRstats
 
     script:
+    HUMAN = ( params.HUMAN != 0 ? "-human" : "" )
+    MIN_C = ( params.MR_MIN_C != 0 ? "-n ${params.MR_MIN_C}" : "" )
     """
-    ${baseDir}/${params.SCRIPT_PATH}/call_MRs.sh \\
-		4 \\
-		${baseDir}/${params.BIN_PATH} \\
-		${sample[0]} \\
-		${sample[1]+1} \\
-		${params.MIN_COVERAGE} \\
-		${params.DESERT_SIZE} \\
-		${params.MERGE_DIST} \\
-		${params.TRIM_METHRATE/100} \\
-		${matrixWG} \\
-		./${sample[0]} \\
-		${params.HUMAN} \\
-		${params.MR_MIN_C}
-    mv ${sample[0]}/MRs.bed ${sample[0]}/${sample[1]+4}.${sample[0]}.MRs.bed
+    hmm_mrs \\
+     -x ${sampleID[1]+1} \\
+     -y ${sampleID[0]} \\
+     -c ${params.MIN_COVERAGE} \\
+     -o ${sampleID[0]}.MRs.bed \\
+     -d ${params.DESERT_SIZE} \\
+     -i 30 \\
+     -m ${params.MERGE_DIST} \\
+     -t ${params.TRIM_METHRATE/100} \\
+     -p hmm.params \\
+     ${HUMAN} \\
+     ${MIN_C} \\
+     ${matrixWG}
+
+     echo -e "${sampleID[0]}\t" \\
+        \$(cat ${sampleID[0]}.MRs.bed | wc -l)"\t" \\
+        \$(awk -v OFS=\"\t\" '{sum+=\$3-\$2+1}END{print sum, sprintf("%.0f", sum/NR)}' ${sampleID[0]}.MRs.bed) \\
+        > MR_stats.tsv
     """
 }
-
-MRs.into{MRs_igv; MRs_split}
 
 process MethylScore_igv {
     tag "batchsize:${params.MR_BATCH_SIZE}"
@@ -326,7 +411,8 @@ process MethylScore_igv {
  
     script:
     """
-    ${baseDir}/${params.SCRIPT_PATH}/igv.sh "" ${baseDir}/${params.SCRIPT_PATH} ${matrixWG} . ${bed}
+    sort -m -k1,1 -k2,2g -k3,3g ${bed} > MRs.merged.bed
+    python ${baseDir}/${params.SCRIPT_PATH}/matrix2igv.py -i ${matrixWG} -m MRs.merged.bed -o methinfo.igv
     """
 }
 
@@ -335,20 +421,22 @@ process MethylScore_splitMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
 
     input:
-    file(bed) from MRs_split.collect()
+    val(sampleID) from indexedSamples_splitting.collect()
+    file(MRfile) from MRs_splitting.collect()
 
     output:
-    file('*') into chunks mode flatten
-    file('../samplesheet.tsv') into chunkfile
+    file('MRbatch*') into MRchunks mode flatten
+    file('samples.tsv') into (samples_callDMRs, samples_mergeDMRs)
 
     script:
     """
-    for i in ${bed}; do
-      echo -e \$(basename \$i | cut -f2 -d.)'\t'\$(basename \$i | cut -f1 -d.)'\t'\$i >> ../samples.txt
+    idx=4
+    for i in ${sampleID.join(' ')}; do
+    	echo -e \$i'\t'\$idx'\t'\$i'.MRs.bed' >> samples.tsv
+        (( idx ++ ))
     done
-    sort ../samples.txt > ../samplesheet.tsv
 
-    split_MRfile ../samplesheet.tsv MRbatch ${params.MR_BATCH_SIZE}
+    split_MRfile samples.tsv MRbatch ${params.MR_BATCH_SIZE}
     """
 }
 
@@ -357,20 +445,34 @@ process MethylScore_callDMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
-    file(matrix) from matrixWG_DMRs
-    file(samples) from chunkfile
-    each file(chunk) from chunks
+    file(matrixWG) from matrixWG_DMRs
+    file(samples) from samples_callDMRs
+    each file(chunk) from MRchunks
 
     output:
-    file('*/*.bed') optional true into beds
-    file('*/*.dif') optional true into difs
-    file('samplesheet.tsv') into mergefile
+    file('*/*.bed') optional true into bedFiles
+    file('*/*.dif') optional true into segmentFiles
 
     script:
     """
     mkdir ${chunk}.out
 
-    ${baseDir}/${params.SCRIPT_PATH}/call_DMRs.sh 5 '${baseDir}/${params.BIN_PATH}/dmrs -s ${samples} -r ${chunk} -m ${matrix} -p ${params.MR_FREQ_CHANGE} -i ${params.CLUSTER_MIN_METH_DIFF} -j ${params.CLUSTER_MIN_METH} -v ${params.DMR_MIN_COV} -n ${params.DMR_MIN_C} -w ${params.SLIDING_WINDOW_SIZE} -x ${params.SLIDING_WINDOW_STEP} -z 1 -B ${baseDir}/${params.BIN_PATH}/betabin_model -Y ${baseDir}/${params.SCRIPT_PATH}/pv2qv.py --no-post-process -o ${chunk}.out' ${chunk}.out
+    dmrs \\
+     -s ${samples} \\
+     -r ${chunk} \\
+     -m ${matrixWG} \\
+     -p ${params.MR_FREQ_CHANGE} \\
+     -i ${params.CLUSTER_MIN_METH_DIFF} \\
+     -j ${params.CLUSTER_MIN_METH} \\
+     -v ${params.DMR_MIN_COV} \\
+     -n ${params.DMR_MIN_C} \\
+     -w ${params.SLIDING_WINDOW_SIZE} \\
+     -x ${params.SLIDING_WINDOW_STEP} \\
+     -z 1 \\
+     -B ${baseDir}/${params.BIN_PATH}/betabin_model \\
+     -Y ${baseDir}/${params.SCRIPT_PATH}/pv2qv.py \\
+     --no-post-process \\
+     -o ${chunk}.out
     """
 }
 
@@ -379,24 +481,26 @@ process MethylScore_mergeDMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
-    file(segments) from difs.collectFile(name:'segments.dif')
-    file(samples) from mergefile
+    file(segments) from segmentFiles.collectFile(name:'segments.dif')
+    file(samples) from samples_mergeDMRs
 
     output:
-    file('*') into dmrs
+    file('*') into DMRs
 
     script:
     """
-    ${baseDir}/${params.BIN_PATH}/merge_DMRs \\
-		${samples} \\
-		${segments} \\
-		. \\
-		python \\
-		${baseDir}/${params.SCRIPT_PATH}/pv2qv.py \\
-		${params.FDR_CUTOFF} \\
-		${params.CLUSTER_MIN_METH} \\
-		${params.DMR_MIN_C} \\
-		${params.HDMR_FOLD_CHANGE} \\
-		${params.REMOVE_INTMED_FILES}
+    merge_DMRs \\
+     ${samples} \\
+     ${segments} \\
+     . \\
+     python \\
+     ${baseDir}/${params.SCRIPT_PATH}/pv2qv.py \\
+     ${params.FDR_CUTOFF} \\
+     ${params.CLUSTER_MIN_METH} \\
+     ${params.DMR_MIN_C} \\
+     ${params.HDMR_FOLD_CHANGE} \\
+     ${params.REMOVE_INTMED_FILES}
+
+    sort -k1,1V -k2 -o DMRs.bed DMRs.bed
     """
 }
