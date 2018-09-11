@@ -41,10 +41,7 @@ nextflow /path/to/MethylScore.nf --SAMPLE_SHEET=/path/to/samplesheet.tsv --IGV=t
 
 ## Profiles
 There are several profiles which use different methods to resolve external pipeline dependencies.
-
-### standard (default)
-The standard profile uses the environment modules deployed on MENDEL and is the default when running the pipeline without the `-profile` flag
-This will only work on MENDEL, but not on other clusters because module names will likely differ.
+By default, the pipeline uses the singularity profile described below.
 
 ### singularity
 The singularity profile uses a container with a basic linux system that includes all dependencies needed to run the pipeline.
@@ -56,6 +53,6 @@ A prebuilt image is located at `/lustre/scratch/projects/becker_common/singulari
 
 ### conda
 The conda profile uses the conda system to resolve dependencies. It creates virtual environment and resolves dependencies according to the `environment.yaml` file.
-To run on mendel, you have to `module load Miniconda 3` first.
+To run on mendel, you have to `module load Miniconda3` first.
 
 Note: with `-profile conda` you can easily run the pipeline on your local computer, given you have nextflow and conda installed and set `executor = 'local'` in the config file.
