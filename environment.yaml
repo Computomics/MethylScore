@@ -4,6 +4,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - coreutils
   - python=2.7
   - samtools=1.9
   - tabix=0.2.5
