@@ -1,0 +1,103 @@
+################################
+# MethylScore configuration file
+################################
+
+CLUSTER_PROJECT : "becker_common"
+SCRIPT_PATH : "scripts"
+BIN_PATH : "bin"
+
+### General options
+
+# IGV output?
+IGV : 0
+
+# reference genome
+GENOME : "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
+
+# project folder (relative to folder of this config file, or absolute path)
+PROJECT_FOLDER : "./results"
+
+# sample sheet file (relative to folder of this config file, or absolute path)
+SAMPLE_SHEET : "./samplesheet.tsv"
+
+# regions of interest in bed file format (relative to folder of this config file, or absolute path)
+ROI : ""
+
+# Output basic statistics?
+STATISTICS : 1
+
+# Perform read de-duplication?
+DO_DEDUP : 1
+
+# Dealing with human methylation data?
+HUMAN : 0
+
+# Remove intermediate files?
+REMOVE_INTMED_FILES : 1
+
+### DMR options:
+
+
+# Percent MR frequency change (across all samples) leading to segment break
+MR_FREQ_CHANGE : 20
+
+# Upstream distance in bp to which MR frequency change is compared
+MR_FREQ_DISTANCE : 30
+
+# Minimum methylation level difference between any pair of sample clusters
+CLUSTER_MIN_METH_DIFF : 20
+
+# Minimum methylation level of any sample cluster
+CLUSTER_MIN_METH : 20
+
+# Sliding window length determining segment to test
+SLIDING_WINDOW_SIZE : 0
+
+# Sliding window step size
+SLIDING_WINDOW_STEP : 0
+
+# Number of MR blocks per file
+MR_BATCH_SIZE : 500
+
+# Minimum read coverage of cytosines within (candidate) DMRs:
+DMR_MIN_COV : 3
+
+# Minimum number of >= DMR_MIN_COV-covered cytosines within (candidate) DMRs:
+DMR_MIN_C : 10
+
+# FDR cutoff
+FDR_CUTOFF : 0.05
+
+# Minimum fold change between clusters to call hDMRs:
+HDMR_FOLD_CHANGE : 3
+
+
+### MR options:
+
+# minimum per-site coverage to consider
+MIN_COVERAGE : 1
+
+# don't span a region of this minimum size without covered cytosines, rather
+# start separate HMM path
+DESERT_SIZE : 100
+
+# Minimum number of covered cytosines within MRs, turns off permutation test
+MR_MIN_C : 20
+
+# merge MRs that are <MERGE_DIST> bp close to each other
+MERGE_DIST : 30
+
+# trim sites off both MR ends below this methylation level
+TRIM_METHRATE : 10
+
+
+### Consensus options:
+
+# Minimum mapping quality of reads to consider (influenced by ploidy level!)
+MIN_QUAL : 30
+
+# Disregard first bases of each read for consensus calling
+IGNORE_FIRST_BP : 3
+
+# Disregard last bases of each read for consensus calling
+IGNORE_LAST_BP : 1
