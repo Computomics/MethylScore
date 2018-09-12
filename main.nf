@@ -17,7 +17,7 @@
  */
 
 // Pipeline version
-version = "0.1.13.2-nf"
+version = "0.1.13.3-nf"
 
 // Configurable variables
 params.CLUSTER_PROJECT = "becker_common"
@@ -46,6 +46,7 @@ params.MR_MIN_C = 20
 params.PROJECT_FOLDER = "./results"
 params.REMOVE_INTMED_FILES = 0
 params.ROI = ""
+params.MR_PARAMS = ""
 params.SLIDING_WINDOW_SIZE = 0
 params.SLIDING_WINDOW_STEP = 0
 params.STATISTICS = 1
@@ -106,6 +107,7 @@ log.info "MR_MIN_C              : ${params.MR_MIN_C}"
 log.info "PROJECT_FOLDER        : ${params.PROJECT_FOLDER}"
 log.info "REMOVE_INTMED_FILES   : ${params.REMOVE_INTMED_FILES ? "Yes" : "No"}"
 log.info "ROI                   : ${params.ROI}"
+log.info "MR_PARAMS             : ${params.MR_PARAMS}"
 log.info "SAMPLE_SHEET          : ${params.SAMPLE_SHEET}"
 log.info "SLIDING_WINDOW_SIZE   : ${params.SLIDING_WINDOW_SIZE}"
 log.info "SLIDING_WINDOW_STEP   : ${params.SLIDING_WINDOW_STEP}"
@@ -373,6 +375,7 @@ process MethylScore_callMRs {
     script:
     HUMAN = ( params.HUMAN != 0 ? "-human" : "" )
     MIN_C = ( params.MR_MIN_C != 0 ? "-n ${params.MR_MIN_C}" : "" )
+    HMM_PARAMETERS = ( params.MR_PARAMS != "" ? "-P ${params.MR_PARAMS}" : "" )
     """
     hmm_mrs \\
      -x ${sampleID[1]+1} \\
@@ -386,6 +389,7 @@ process MethylScore_callMRs {
      -p hmm.params \\
      ${HUMAN} \\
      ${MIN_C} \\
+     ${HMM_PARAMETERS} \\
      ${matrixWG}
 
      echo -e "${sampleID[0]}\t" \\

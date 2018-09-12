@@ -90,6 +90,8 @@ MERGE_DIST : 30
 # trim sites off both MR ends below this methylation level
 TRIM_METHRATE : 10
 
+# provide parameter file for calling MRs on all samples (leave empty if it should be trained anew)
+MR_PARAMS : ""
 
 ### Consensus options:
 
