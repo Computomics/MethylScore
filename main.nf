@@ -152,7 +152,11 @@ process MethylScore_filterQC {
  
     script:
     """
-    samtools view -bh -F 0x200 -F 0x4 -o ${bamFile.baseName}.passQC.bam ${bamFile}
+    if [[ \$(samtools view -H ${bamFile} | grep unsorted) ]]; then
+     samtools sort ${bamFile} | samtools view -bh -F 0x200 -F 0x4 -o ${bamFile.baseName}.passQC.bam
+    else
+     samtools view -bh -F 0x200 -F 0x4 -o ${bamFile.baseName}.passQC.bam ${bamFile}
+    fi
     """
 }
 
