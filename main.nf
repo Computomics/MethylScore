@@ -124,14 +124,17 @@ samplesheet = file(params.SAMPLE_SHEET)
  * Create a channel for the tsv file containing samples
  */
 
-samples = Channel.from(samplesheet.readLines())
-                 .map{line ->
-                  list = line.split()
-                  sampleID = list[0]
-                  seqType = list[1]
-                  bamFile = list[2]
-                  [ sampleID, seqType, file(bamFile) ]
-                  }
+Channel
+ .from(samplesheet.readLines())
+ .map{line ->
+  list = line.split()
+  sampleID = list[0]
+  seqType = list[1]
+  bamFile = list[2]
+  [ sampleID, seqType, file(bamFile) ]
+  }
+ .set { samples }
+
 
 /*
  * Create a channel for the reference genome and split it by chromosome
@@ -169,6 +172,7 @@ process MethylScore_mergeReplicates {
 
     output:
     set val(sampleID), val(seqType), file('*passQC.bam') into merged
+    val(sampleID) into sampleList
 
     script:
     if( bamFile.toList().size() != 1 )
@@ -186,6 +190,10 @@ process MethylScore_mergeReplicates {
        mv ${bamFile} ${sampleID}.passQC.bam
        """
 }
+
+sampleList
+ .collect()
+ .into { indexedSamples_MRs; indexedSamples_splitting }
 
 if(params.DO_DEDUP) {
 
@@ -318,12 +326,10 @@ process MethylScore_chromosomalmatrix {
     set val(sampleID), file(allC), val(chromosome) from consensus.groupTuple(by: 2, sort: 'true')
 
     output:
-    set val(chromosome), file("${chromosome}.genome_matrix.tsv") into splitMatrix
-    val(sampleID) into idx
+    file("${chromosome}.genome_matrix.tsv") into splitMatrix
 
     script:
     """
-    idx=4 
     for i in ${sampleID.join(' ')}; do
     	echo -e \$i'\t'\$i'.'${chromosome}'.allC.output' >> samples.txt
     done
@@ -333,35 +339,8 @@ process MethylScore_chromosomalmatrix {
 }
 
 splitMatrix
- .transpose()
- .toSortedList({a, b -> a[0] <=> b[0]})
- .flatten()
- .buffer(size:1, skip:1)
- .set { matrix }
-
-process MethylScore_genomematrix {
-    tag "$matrixWG"
-    publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
-
-    input:
-//    file(matrixWG) from splitMatrix.collectFile(name: 'genome_matrix.tsv')
-    file(matrixWG) from matrix.collect()
-
-    output:
-    file('genome_matrix.tsv') into (matrixWG_MRs, matrixWG_igv, matrixWG_DMRs)
-
-    script:
-    """
-    cat ${matrixWG} | sed '1!{/^#/d;}' > genome_matrix.tsv
-    """
-//    sed -i '1!{/^#/d;}' ${matrixWG} > genome_matrix.tsv
-}
-
-idx
- .flatten()
- .unique()
- .toList()
- .into { indexedSamples_MRs; indexedSamples_splitting }
+ .collectFile(name: 'genome_matrix.tsv', keepHeader: true, sort: { it.baseName })
+ .into {matrixWG_MRs; matrixWG_igv; matrixWG_DMRs}
 
 process MethylScore_callMRs {
     tag "$sampleID"
@@ -369,7 +348,7 @@ process MethylScore_callMRs {
 
     input:
     file(matrixWG) from matrixWG_MRs
-    each sampleID from indexedSamples_MRs.withIndex()
+    each sampleID from indexedSamples_MRs.withIndex(1)
 
     output:
     file('*MRs.bed') into (MRs_igv, MRs_splitting)
@@ -382,7 +361,7 @@ process MethylScore_callMRs {
     HMM_PARAMETERS = ( params.MR_PARAMS != "" ? "-P ${params.MR_PARAMS}" : "" )
     """
     hmm_mrs \\
-     -x ${sampleID[1]+1} \\
+     -x ${sampleID[1]} \\
      -y ${sampleID[0]} \\
      -c ${params.MIN_COVERAGE} \\
      -o ${sampleID[0]}.MRs.bed \\
