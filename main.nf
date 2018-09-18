@@ -140,8 +140,10 @@ Channel
  * Create a channel for the reference genome and split it by chromosome
  */
 
-refSplit = Channel.fromPath(reference)
-	       .splitFasta( record: [id: true, text: true] )
+Channel
+ .fromPath(reference)
+ .splitFasta( record: [id: true, text: true] )
+ .set { refSplit }
 
 process MethylScore_filterQC {
     tag "$bamFile"
@@ -339,11 +341,11 @@ process MethylScore_chromosomalmatrix {
 }
 
 splitMatrix
- .collectFile(name: 'genome_matrix.tsv', keepHeader: true, sort: { it.baseName })
+ .collectFile(name: 'genome_matrix.tsv', keepHeader: true, sort: { it.baseName }, storeDir: "${params.PROJECT_FOLDER}/03matrix")
  .into {matrixWG_MRs; matrixWG_igv; matrixWG_DMRs}
 
 process MethylScore_callMRs {
-    tag "$sampleID"
+    tag "${sampleID[0]}"
     publishDir "${params.PROJECT_FOLDER}/04MRs/${sampleID[0]}", mode: 'copy'
 
     input:
