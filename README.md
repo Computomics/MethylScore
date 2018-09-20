@@ -31,16 +31,21 @@ nextflow run Gregor-Mendel-Institute/MethylScore-nf -user your.github.username -
 
 ## Parameters
 Pipeline parameters are included in the nextflow script itself and are initialized to their default values.
-Currently, passing a config file is not supported, but individual parameters can be passed to the pipeline.
 
-For example if you want methylated regions to be visualized as igv:
+Individual parameters can be passed to the pipeline on the commandline. For example if you want methylated regions to be visualized as igv:
 
 ```bash
 nextflow /path/to/MethylScore.nf --SAMPLE_SHEET=/path/to/samplesheet.tsv --IGV=true
 ```
 
+The repository also contains `example_config.yaml` which can be edited and then passed to the pipeline using the `-params-file` flag
+
+```bash
+nextflow /path/to/MethylScore.nf --SAMPLE_SHEET=/path/to/samplesheet.tsv -params-file=/path/to/config.yaml
+```
+
 ## Profiles
-There are several profiles which use different methods to resolve external pipeline dependencies.
+There are two profiles which use different methods to resolve external pipeline dependencies.
 By default, the pipeline uses the singularity profile described below.
 
 ### singularity
