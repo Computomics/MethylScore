@@ -179,9 +179,7 @@ process MethylScore_mergeReplicates {
     script:
     if( bamFile.toList().size() != 1 )
        """
-       mkdir tmp
-
-       java -Xmx1024m -Xms256m -Djava.io.tmpdir=tmp -XX:ParallelGCThreads=1 -jar ${PICARD_PATH}/picard.jar \\
+       picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -XX:ParallelGCThreads=1 \\
         MergeSamFiles \\
     	  I=${bamFile.join(' I=')} \\
     	  O=${sampleID}.passQC.bam \\
@@ -212,15 +210,14 @@ if(params.DO_DEDUP) {
 
     script:
     """
-    mkdir tmp
-    java -Xmx1024m -Xms256m -Djava.io.tmpdir=tmp -XX:ParallelGCThreads=1 -jar ${PICARD_PATH}/picard.jar \\
+    picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -XX:ParallelGCThreads=1 \\
       MarkDuplicates \\
         I=${sampleID}.passQC.bam \\
         O=${sampleID}.passQC.dedup.bam \\
         METRICS_FILE=dedup.metrics.txt
         REMOVE_DUPLICATES=true \\
         MAX_FILE_HANDLES=1 \\
-        TMP_DIR=\$PWD \\
+        TMP_DIR=. \\
 	VALIDATION_STRINGENCY=LENIENT
     """
  } 
