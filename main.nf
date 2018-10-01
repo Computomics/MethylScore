@@ -17,7 +17,7 @@
  */
 
 // Pipeline version
-version = "0.1.13.3-nf"
+version = "0.1.13.4-nf"
 
 // Configurable variables
 params.CLUSTER_PROJECT = "becker_common"
@@ -358,7 +358,7 @@ process MethylScore_callMRs {
 
     script:
     HUMAN = ( params.HUMAN != 0 ? "-human" : "" )
-    MIN_C = ( params.MR_MIN_C != 0 ? "-n ${params.MR_MIN_C}" : "" )
+    MIN_C = ( params.MR_MIN_C > 0 ? "-n ${params.MR_MIN_C}" : "-n -1" )
     HMM_PARAMETERS = ( params.MR_PARAMS != "" ? "-P ${params.MR_PARAMS}" : "" )
     """
     hmm_mrs \\

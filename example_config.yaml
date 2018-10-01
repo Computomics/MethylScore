@@ -81,7 +81,7 @@ MIN_COVERAGE : 1
 # start separate HMM path
 DESERT_SIZE : 100
 
-# Minimum number of covered cytosines within MRs, turns off permutation test
+# Minimum number of covered cytosines within MRs, turns off permutation test (set to -1 for turning on the permutation test)
 MR_MIN_C : 20
 
 # merge MRs that are <MERGE_DIST> bp close to each other
