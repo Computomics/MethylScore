@@ -17,7 +17,7 @@
  */
 
 // Pipeline version
-version = "0.1.13.4-nf"
+version = "0.1.14-nf"
 
 // Configurable variables
 params.CLUSTER_PROJECT = "becker_common"
