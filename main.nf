@@ -19,52 +19,83 @@
 // Pipeline version
 version = "0.1.14-nf"
 
-// Configurable variables
+// General parameters
 params.CLUSTER_PROJECT = "becker_common"
 params.GENOME = "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
-params.IGV = 0
-params.CLUSTER_MIN_METH = 20
-params.CLUSTER_MIN_METH_DIFF = 20
-params.DESERT_SIZE = 100
-params.DMR_MIN_C = 10
-params.DMR_MIN_COV = 3
-params.DO_DEDUP = 1
-
-params.FDR_CUTOFF = 0.05
-params.FORCE_RERUN = 0
-params.HDMR_FOLD_CHANGE = 3
-params.HUMAN = 0
-params.IGNORE_FIRST_BP = 3
-params.IGNORE_LAST_BP = 1
-params.MERGE_DIST = 30
-params.MIN_COVERAGE = 1
-params.MIN_QUAL = 30
-params.MR_BATCH_SIZE = 500
-params.MR_FREQ_CHANGE = 20
-params.MR_FREQ_DISTANCE = 30
-params.MR_MIN_C = 20
+params.SAMPLE_SHEET = "./samplesheet.tsv"
 params.PROJECT_FOLDER = "./results"
+
+params.FORCE_RERUN = 0
+params.HUMAN = 0
 params.REMOVE_INTMED_FILES = 0
 params.ROI = ""
-params.MR_PARAMS = ""
-params.SLIDING_WINDOW_SIZE = 0
-params.SLIDING_WINDOW_STEP = 0
-params.STATISTICS = 1
-params.TRIM_METHRATE = 10
 
-params.SAMPLE_SHEET = "./samplesheet.tsv"
 params.SCRIPT_PATH = "scripts"
 params.BIN_PATH = "bin"
 params.EXTBIN_PATH = "bin_ext"
 
+params.STATISTICS = 1
+params.IGV = 0
+params.DO_DEDUP = 1
+
+// DMR parameters
+params.MR_FREQ_CHANGE = 20
+params.MR_FREQ_DISTANCE = 30
+params.CLUSTER_MIN_METH = 20
+params.CLUSTER_MIN_METH_DIFF = 20
+params.SLIDING_WINDOW_SIZE = 0
+params.SLIDING_WINDOW_STEP = 0
+params.DMR_MIN_C = 10
+params.DMR_MIN_COV = 3
+params.MR_BATCH_SIZE = 500
+params.HDMR_FOLD_CHANGE = 3
+params.FDR_CUTOFF = 0.05
+
+// Consensus parameters
+params.MIN_QUAL = 30
+params.IGNORE_FIRST_BP = 3
+params.IGNORE_LAST_BP = 1
+
+// MR parameters
+params.MIN_COVERAGE = 1
+params.MR_MIN_C = 20
+params.DESERT_SIZE = 100
+params.TRIM_METHRATE = 10
+params.MERGE_DIST = 30
+params.MR_PARAMS = ""
+
 params.DEBUG = false
 
-// ToDo check parameters for sanity
-//if( params.CLUSTER_MIN_METH ){
-//    println(params.CLUSTER_MIN_METH.class)
-//} else {
-//    println(params.CLUSTER_MIN_METH.class)
-//}
+// Parameter checks
+assert params.HUMAN == 0 || params.HUMAN == 1, "HUMAN must be set to either 0 (off) or 1 (on)"
+assert params.IGV == 0 || params.IGV == 1, "IGV must be set to either 0 (off) or 1 (on)"
+assert params.STATISTICS == 0 || params.STATISTICS == 1, "STATISTICS must be set to either 0 (off) or 1 (on)"
+assert params.FORCE_RERUN == 0 || params.FORCE_RERUN == 1, "FORCE_RERUN must be set to either 0 (off) or 1 (on)"
+assert params.REMOVE_INTMED_FILES == 0 || params.REMOVE_INTMED_FILES == 1, "REMOVE_INTMED_FILES must be set to either 0 (off) or 1 (on)"
+assert params.DO_DEDUP == 0 || params.DO_DEDUP == 1, "DO_DEDUP must be set to either 0 (off) or 1 (on)"
+
+assert params.MR_FREQ_CHANGE in 0..100, "MR_FREQ_CHANGE must be between 0 and 100!"
+assert params.CLUSTER_MIN_METH_DIFF in 0..100, "CLUSTER_MIN_METH_DIFF must be between 0 and 100!"
+assert params.CLUSTER_MIN_METH in 0..100, "CLUSTER_MIN_METH must be between 0 and 100!"
+assert params.MR_FREQ_DISTANCE instanceof Integer && params.MR_FREQ_DISTANCE >= 0, "MR_FREQ_DISTANCE must be a non-negative integer!"
+assert params.SLIDING_WINDOW_SIZE instanceof Integer && params.SLIDING_WINDOW_SIZE >= 0, "SLIDING_WINDOW_SIZE must be a non-negative integer!"
+assert params.SLIDING_WINDOW_STEP instanceof Integer && params.SLIDING_WINDOW_STEP >= 0, "SLIDING_WINDOW_STEP must be a non-negative integer!"
+assert params.DMR_MIN_C instanceof Integer && params.DMR_MIN_C >= 0, "DMR_MIN_C must be a non-negative integer!"
+assert params.DMR_MIN_COV instanceof Integer && params.DMR_MIN_COV >= 0, "DMR_MIN_COV must be a non-negative integer!"
+assert params.MR_BATCH_SIZE instanceof Integer && params.MR_BATCH_SIZE >= 0, "MR_BATCH_SIZE must be a non-negative integer!"
+assert params.HDMR_FOLD_CHANGE >= 0, "HDMR_FOLD_CHANGE must be a non-negative number!"
+assert params.FDR_CUTOFF > 0 && params.FDR_CUTOFF < 1, "FDR_CUTOFF must be between 0 and 1!"
+
+assert params.MIN_QUAL instanceof Integer && params.MIN_QUAL in 1..40, "MIN_QUAL must be between 1 and 40!"
+assert params.IGNORE_FIRST_BP instanceof Integer && params.IGNORE_FIRST_BP >= 0, "IGNORE_FIRST_BP must be a non-negative integer!"
+assert params.IGNORE_LAST_BP instanceof Integer && params.IGNORE_LAST_BP >= 0, "IGNORE_LAST_BP must be a non-negative integer!"
+
+assert params.MIN_COVERAGE instanceof Integer && params.MIN_COVERAGE > 0, "MIN_COVERAGE must be a non-negative integer!"
+assert params.DESERT_SIZE instanceof Integer && params.DESERT_SIZE > 0, "DESERT_SIZE must be a non-negative integer!"
+assert params.MERGE_DIST instanceof Integer && params.MERGE_DIST > 0, "MERGE_DIST must be a non-negative integer!"
+assert params.MR_MIN_C instanceof Integer && params.MR_MIN_C > 0, "MR_MIN_C must be a non-negative integer!"
+assert params.TRIM_METHRATE in 0..100, "TRIM_METHRATE must be between 0 and 100!"
+
 
 log.info "=================================================="
 log.info " MethylScore ${version}"
