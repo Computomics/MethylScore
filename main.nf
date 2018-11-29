@@ -28,7 +28,7 @@ params.PROJECT_FOLDER = "./results"
 params.FORCE_RERUN = 0
 params.HUMAN = 0
 params.REMOVE_INTMED_FILES = 0
-params.ROI = ""
+params.ROI = 'not specified' 
 
 params.SCRIPT_PATH = "scripts"
 params.BIN_PATH = "bin"
@@ -62,7 +62,7 @@ params.MR_MIN_C = 20
 params.DESERT_SIZE = 100
 params.TRIM_METHRATE = 10
 params.MERGE_DIST = 30
-params.MR_PARAMS = ""
+params.MR_PARAMS = 'not specified'
 
 params.DEBUG = false
 
@@ -148,8 +148,9 @@ log.info "---------------------------------------------------"
 log.info "Config Profile : ${workflow.profile}"
 log.info "=================================================="
 
-reference = file(params.GENOME)
 samplesheet = file(params.SAMPLE_SHEET)
+roi_file = file(params.ROI)
+hmm_params_file = file(params.MR_PARAMS)
 
 /*
  * Create a channel for the tsv file containing samples
@@ -158,23 +159,26 @@ samplesheet = file(params.SAMPLE_SHEET)
 Channel
  .from(samplesheet.readLines())
  .map{line ->
-  list = line.split()
-  sampleID = list[0]
-  seqType = list[1]
-  bamFile = list[2]
+  list = line.split();
+  sampleID = list[0];
+  seqType = list[1];
+  bamFile = list[2];
+  assert list.size() >= 3 && line =~ /\t/: "Invalid samplesheet";
   [ sampleID, seqType, file(bamFile) ]
   }
  .set { samples }
-
 
 /*
  * Create a channel for the reference genome and split it by chromosome
  */
 
 Channel
- .fromPath(reference)
+ .fromPath("${params.GENOME}", checkIfExists: true)
  .splitFasta( record: [id: true, text: true] )
+// .ifEmpty { exit 1, "${params.GENOME}: not a valid fasta file!" }
  .set { refSplit }
+
+
 
 process MethylScore_filterQC {
     tag "$bamFile"
@@ -256,7 +260,7 @@ if(params.DO_DEDUP) {
  } 
 } else {
 
-dedup = merged
+ dedup = merged
 
 }
 
@@ -266,6 +270,7 @@ process MethylScore_readStatistics {
 
     input:
     set val(sampleID), val(seqType), file(bamFile) from stats
+    file(bed) from roi_file
 
     output:
     file ('*') into readStats
@@ -274,20 +279,26 @@ process MethylScore_readStatistics {
     params.STATISTICS == 1
    
     script:
-    """
-    ${baseDir}/${params.SCRIPT_PATH}/read_stats.sh \\
-		${sampleID} \\
-                ${bamFile} \\
-                ${params.ROI}
+    if( bed.name != 'not specified' )
+       """
+       ${baseDir}/${params.SCRIPT_PATH}/read_stats.sh \\
+          ${sampleID} \\
+          ${bamFile} \\
+          ${bed}
 
-    if [[ ! -z "${params.ROI}" ]]; then
        ${baseDir}/${params.SCRIPT_PATH}/cov_stats.sh \\
-                ${sampleID} \\
-                ${bamFile} \\
-                ${params.ROI}
-
-    fi
+          ${sampleID} \\
+          ${bamFile} \\
+          ${bed}
+       """
+    else
+       """
+       ${baseDir}/${params.SCRIPT_PATH}/read_stats.sh \\
+          ${sampleID} \\
+          ${bamFile} \\
+          "" 
     """
+
 }
 
 process MethylScore_splitBams {
@@ -320,7 +331,7 @@ process MethylScore_callConsensus {
     set val(sampleID), file('*allC.output'), val(chromosome) into consensus
 
     script:
-    flagW = ( seqType[0] == "PE" ? "flagW=99,147 flagC=83,163" : "flagW=0 flagC=16" )
+    def flagW = ( seqType[0] == "PE" ? "flagW=99,147 flagC=83,163" : "flagW=0 flagC=16" )
     """
     MethylExtract.pl \\
      seq='.' \\
@@ -381,6 +392,7 @@ process MethylScore_callMRs {
     input:
     file(matrixWG) from matrixWG_MRs
     each sampleID from indexedSamples_MRs.withIndex(1)
+    file(parameters) from hmm_params_file
 
     output:
     file('*MRs.bed') into (MRs_igv, MRs_splitting)
@@ -388,9 +400,9 @@ process MethylScore_callMRs {
     file('*.tsv') into MRstats
 
     script:
-    HUMAN = ( params.HUMAN != 0 ? "-human" : "" )
-    MIN_C = ( params.MR_MIN_C > 0 ? "-n ${params.MR_MIN_C}" : "-n -1" )
-    HMM_PARAMETERS = ( params.MR_PARAMS != "" ? "-P ${params.MR_PARAMS}" : "" )
+    def HUMAN = ( params.HUMAN != 0 ? "-human" : "" )
+    def MIN_C = ( params.MR_MIN_C > 0 ? "-n ${params.MR_MIN_C}" : "-n -1" )
+    def HMM_PARAMETERS = ( parameters.name != 'not specified' ? "-P $parameters" : "" )
     """
     hmm_mrs \\
      -x ${sampleID[1]} \\
@@ -404,8 +416,8 @@ process MethylScore_callMRs {
      -p hmm.params \\
      ${HUMAN} \\
      ${MIN_C} \\
-     ${HMM_PARAMETERS} \\
-     ${matrixWG}
+     ${matrixWG} \\
+     ${HMM_PARAMETERS}
 
      echo -e "${sampleID[0]}\t" \\
         \$(cat ${sampleID[0]}.MRs.bed | wc -l)"\t" \\

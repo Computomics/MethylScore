@@ -37,4 +37,4 @@ bedtools intersect -wo -a $rois -b $sample.cov.bed | awk -v bp=$bp_ROIs '{ if($2
 bedtools subtract -a $sample.cov.bed -b $rois | awk '{ len=$3-$2; sum+=len*$4; nr_pos+=len } END{ OFS="\t"; print nr_pos, sprintf("%.1f", sum/nr_pos) }'
 ) | paste - - - - - - | awk '{ OFS="\t"; if ($6>0) print $1,$2,$3,$4,$5,$6,sprintf("%.1f", $4/$6); else print $0 }' >> $sample.cov_stats.tsv
 
-rm $sample.cov.bed
+rm sample.cov.bed
