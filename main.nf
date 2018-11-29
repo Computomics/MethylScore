@@ -175,7 +175,7 @@ Channel
 Channel
  .fromPath("${params.GENOME}", checkIfExists: true)
  .splitFasta( record: [id: true, text: true] )
-// .ifEmpty { exit 1, "${params.GENOME}: not a valid fasta file!" }
+ .ifEmpty { exit 1, "${params.GENOME}: not a valid fasta file!" }
  .set { refSplit }
 
 
@@ -396,7 +396,7 @@ process MethylScore_callMRs {
 
     output:
     file('*MRs.bed') into (MRs_igv, MRs_splitting)
-    file('*.params') into hmmparams
+    file('*.params') optional true into hmmparams
     file('*.tsv') into MRstats
 
     script:

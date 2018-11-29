@@ -21,7 +21,7 @@ PROJECT_FOLDER : "./results"
 SAMPLE_SHEET : "./samplesheet.tsv"
 
 # regions of interest in bed file format (relative to folder of this config file, or absolute path)
-ROI : ""
+ROI : 'not specified'
 
 # Output basic statistics?
 STATISTICS : 1
@@ -91,7 +91,7 @@ MERGE_DIST : 30
 TRIM_METHRATE : 10
 
 # provide parameter file for calling MRs on all samples (leave empty if it should be trained anew)
-MR_PARAMS : ""
+MR_PARAMS : 'not specified'
 
 ### Consensus options:
 
