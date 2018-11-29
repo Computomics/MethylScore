@@ -247,11 +247,11 @@ if(params.DO_DEDUP) {
       MarkDuplicates \\
         I=${sampleID}.passQC.bam \\
         O=${sampleID}.passQC.dedup.bam \\
-        METRICS_FILE=dedup.metrics.txt
+        METRICS_FILE=dedup.metrics.txt \\
         REMOVE_DUPLICATES=true \\
         MAX_FILE_HANDLES=1 \\
         TMP_DIR=. \\
-	VALIDATION_STRINGENCY=LENIENT
+        VALIDATION_STRINGENCY=LENIENT
     """
  } 
 } else {
