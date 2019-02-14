@@ -208,7 +208,7 @@ process MethylScore_mergeReplicates {
     set val(sampleID), val(seqType), file(bamFile) from passQC.groupTuple()
 
     output:
-    set val(sampleID), val(seqType), file('*passQC.bam') into merged
+    set val(sampleID), val(seqType), file('*merged.passQC.bam') into merged
     val(sampleID) into sampleList
 
     script:
@@ -217,13 +217,13 @@ process MethylScore_mergeReplicates {
        mkdir tmp
        picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -Djava.io.tmpdir=tmp -XX:ParallelGCThreads=1 \\
         MergeSamFiles \\
-    	  I=${bamFile.join(' I=')} \\
-    	  O=${sampleID}.passQC.bam \\
-    	  USE_THREADING=false
+        I=${bamFile.join(' I=')} \\
+        O=${sampleID}.merged.passQC.bam \\
+        USE_THREADING=false
        """
     else
        """
-       mv ${bamFile} ${sampleID}.passQC.bam
+       mv ${bamFile} ${sampleID}.merged.passQC.bam
        """
 }
 
@@ -249,7 +249,7 @@ if(params.DO_DEDUP) {
     mkdir tmp
     picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -Djava.io.tmpdir=tmp -XX:ParallelGCThreads=1 \\
       MarkDuplicates \\
-        I=${sampleID}.passQC.bam \\
+        I=${bamFile} \\
         O=${sampleID}.passQC.dedup.bam \\
         METRICS_FILE=dedup.metrics.txt \\
         REMOVE_DUPLICATES=true \\
