@@ -1,7 +1,7 @@
 name: MethylScore
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
   - coreutils
