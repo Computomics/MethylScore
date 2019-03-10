@@ -22,7 +22,8 @@ version = "0.1.14-nf"
 // General parameters
 params.CLUSTER_PROJECT = "becker_common"
 params.GENOME = "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
-params.SAMPLE_SHEET = "./samplesheet.tsv"
+params.SAMPLE_SHEET = false
+params.BEDGRAPH = false
 params.PROJECT_FOLDER = "./results"
 
 params.FORCE_RERUN = 0
@@ -67,6 +68,9 @@ params.MR_PARAMS = 'not specified'
 params.DEBUG = false
 
 // Parameter checks
+assert params.SAMPLE_SHEET, "samplesheet.tsv has to be specified!"
+assert params.GENOME, "reference genome in fasta format has to be specified!"
+
 assert params.HUMAN == 0 || params.HUMAN == 1, "HUMAN must be set to either 0 (off) or 1 (on)"
 assert params.IGV == 0 || params.IGV == 1, "IGV must be set to either 0 (off) or 1 (on)"
 assert params.STATISTICS == 0 || params.STATISTICS == 1, "STATISTICS must be set to either 0 (off) or 1 (on)"
@@ -148,25 +152,8 @@ log.info "---------------------------------------------------"
 log.info "Config Profile : ${workflow.profile}"
 log.info "=================================================="
 
-samplesheet = file(params.SAMPLE_SHEET)
 roi_file = file(params.ROI)
 hmm_params_file = file(params.MR_PARAMS)
-
-/*
- * Create a channel for the tsv file containing samples
- */
-
-Channel
- .from(samplesheet.readLines())
- .map{line ->
-  list = line.split();
-  sampleID = list[0];
-  seqType = list[1];
-  bamFile = list[2];
-  assert list.size() >= 3 && line =~ /\t/: "Invalid samplesheet";
-  [ sampleID, seqType, file(bamFile) ]
-  }
- .set { samples }
 
 /*
  * Create a channel for the reference genome and split it by chromosome
@@ -174,22 +161,50 @@ Channel
 
 Channel
  .fromPath("${params.GENOME}", checkIfExists: true)
- .splitFasta( record: [id: true, text: true] )
  .ifEmpty { exit 1, "${params.GENOME}: not a valid fasta file!" }
+ .tap { fasta }
+ .splitFasta( record: [id: true, text: true] )
  .set { refSplit }
 
+/*
+ * Create a Channel for the tsv file containing samples
+ * Store entries in a map first, then subset to arrays
+ */
 
+Channel
+  .from(file(params.SAMPLE_SHEET).readLines())
+  .map{ line ->
+  list = line.split()
+  def idx = 1
+  !params.BEDGRAPH ? [ 'sampleID':list[0], 'seqType':list[1], 'filePath':file(list[2]) ] : [ 'sampleID':list[0], 'filePath':file(list[1]) ]
+  }
+  .set { inputMap }
+
+def sampleIndex = 1
+inputMap
+  .map { record -> !params.BEDGRAPH ? [ record.sampleID, record.seqType, record.filePath ] : [ record.sampleID, record.filePath , null ] }
+  .tap { samples_bam; samples_bedGraph }
+  .groupTuple(sort: 'true')
+  .map { record -> [ record[0], sampleIndex++, record[1] ] }
+  .into{ indexedSamples; indexedSamples_splitting; indexedSamples_MRs}
+
+/*
+ * Start pipeline
+ */
 
 process MethylScore_filterQC {
     tag "$bamFile"
     publishDir "${params.PROJECT_FOLDER}/01mappings", mode: 'copy'
 
     input:
-    set val(sampleID), val(seqType), file(bamFile) from samples
+    set val(sampleID), val(seqType), file(bamFile) from samples_bam
 
     output:
     set val(sampleID), val(seqType), file('*passQC.bam') into passQC
  
+    when:
+    !params.BEDGRAPH
+
     script:
     """
     if [[ \$(samtools view -H ${bamFile} | grep unsorted) ]]; then
@@ -205,11 +220,13 @@ process MethylScore_mergeReplicates {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(seqType), file(bamFile) from passQC.groupTuple()
+    set val(sampleID), val(seqType), file(bamFile) from passQC.groupTuple(sort: 'true')
 
     output:
-    set val(sampleID), val(seqType), file('*merged.passQC.bam') into merged
-    val(sampleID) into sampleList
+    set val(sampleID), val(seqType), file('*merged.passQC.bam') into (mergedSamples, mergedSampleSheet)
+
+    when:
+    !params.BEDGRAPH
 
     script:
     if( bamFile.toList().size() != 1 )
@@ -227,22 +244,22 @@ process MethylScore_mergeReplicates {
        """
 }
 
-sampleList
- .collect()
- .into { indexedSamples_MRs; indexedSamples_splitting }
 
-if(params.DO_DEDUP) {
+if( params.DO_DEDUP ) {
 
  process MethylScore_deduplicate {
     tag "$sampleID"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(seqType), file(bamFile) from merged
+    set val(sampleID), val(seqType), file(bamFile) from mergedSamples
 
     output:
     set val(sampleID), val(seqType), file('*passQC.dedup.bam') into (dedup, stats)
     file ('dedup.metrics.txt')
+
+    when:
+    !params.BEDGRAPH
 
     script:
     """
@@ -257,10 +274,11 @@ if(params.DO_DEDUP) {
         TMP_DIR=. \\
         VALIDATION_STRINGENCY=LENIENT
     """
- } 
+}
+
 } else {
 
- dedup = merged
+(dedup, stats) = mergedSamples.into(2)
 
 }
 
@@ -276,7 +294,7 @@ process MethylScore_readStatistics {
     file ('*') into readStats
 
     when:
-    params.STATISTICS == 1
+    params.STATISTICS == 1 && !params.BEDGRAPH
    
     script:
     if( bed.name != 'not specified' )
@@ -298,7 +316,6 @@ process MethylScore_readStatistics {
           ${bamFile} \\
           "" 
     """
-
 }
 
 process MethylScore_splitBams {
@@ -311,6 +328,9 @@ process MethylScore_splitBams {
 
     output:
     set val(sampleID), val(seqType), file('*bam'), val("${chromosome.id}"), val("${chromosome.text}") into chrSplit
+
+    when:
+    !params.BEDGRAPH
 
     script:
     """
@@ -329,6 +349,9 @@ process MethylScore_callConsensus {
 
     output:
     set val(sampleID), file('*allC.output'), val(chromosome) into consensus
+
+    when:
+    !params.BEDGRAPH
 
     script:
     def flagW = ( seqType[0] == "PE" ? "flagW=99,147 flagC=83,163" : "flagW=0 flagC=16" )
@@ -349,7 +372,8 @@ process MethylScore_callConsensus {
      LastIgnor=${params.IGNORE_LAST_BP} \\
      minDepthMeth=1 \\
      context=ALL \\
-     bedOut=N wigOut=N \\
+     bedOut=N \\
+     wigOut=N \\
      ${flagW}
 
     for context in CG CHG CHH; do
@@ -361,23 +385,46 @@ process MethylScore_callConsensus {
     """
 }
 
+process MethylScore_mergeContexts {
+    tag "$sampleID"
+    publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy'
+
+    input:
+    set val(sampleID), val(sampleIndex), file(samplesheet) from indexedSamples
+
+    output:
+    set val(sampleID), file("*.bedGraph"), val(null) into mergedContexts
+
+    when:
+    params.BEDGRAPH
+
+    script:
+    """
+    sort -k1,1d -k2,2g -T . $samplesheet > ${sampleID}.merged.bedGraph
+    """
+}
+
+(pile,merged) = params.BEDGRAPH ? mergedContexts.into(2) : consensus.into(2)
+
 process MethylScore_chromosomalmatrix {
     tag "$chromosome"
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    set val(sampleID), file(allC), val(chromosome) from consensus.groupTuple(by: 2, sort: 'true')
+    file(samplesheet) from merged.collectFile(sort: 'true'){ record -> [ 'samples.tsv', record[0] + '\t' + record[1] + '\n' ]}
+    set val(sampleID), file(consensus), val(chromosome) from pile.groupTuple(by: 2, sort: 'true')
+    file(fasta) from fasta
 
     output:
-    file("${chromosome}.genome_matrix.tsv") into splitMatrix
+    file("*genome_matrix.tsv") into splitMatrix
 
     script:
+    def inputFormat = params.BEDGRAPH ? "-i bismark -r ${fasta}" : "-i mxX"
     """
-    for i in ${sampleID.join(' ')}; do
-    	echo -e \$i'\t'\$i'.'${chromosome}'.allC.output' >> samples.txt
-    done
-
-    generate_genome_matrix -s samples.txt -i mxX -o ${chromosome}.genome_matrix.tsv
+    generate_genome_matrix \\
+     -s samples.tsv \\
+     ${inputFormat} \\
+     -o ${chromosome}.genome_matrix.tsv
     """
 }
 
@@ -386,12 +433,12 @@ splitMatrix
  .into {matrixWG_MRs; matrixWG_igv; matrixWG_DMRs}
 
 process MethylScore_callMRs {
-    tag "${sampleID[0]}"
-    publishDir "${params.PROJECT_FOLDER}/04MRs/${sampleID[0]}", mode: 'copy'
+    tag "${sample.getAt(1)}:${sample.getAt(0)}"
+    publishDir "${params.PROJECT_FOLDER}/04MRs/${sample.getAt(0)}", mode: 'copy'
 
     input:
     file(matrixWG) from matrixWG_MRs
-    each sampleID from indexedSamples_MRs.withIndex(1)
+    each sample from indexedSamples_MRs
     file(parameters) from hmm_params_file
 
     output:
@@ -405,10 +452,10 @@ process MethylScore_callMRs {
     def HMM_PARAMETERS = ( parameters.name != 'not specified' ? "-P $parameters" : "" )
     """
     hmm_mrs \\
-     -x ${sampleID[1]} \\
-     -y ${sampleID[0]} \\
+     -x ${sample.getAt(1)} \\
+     -y ${sample.getAt(0)} \\
      -c ${params.MIN_COVERAGE} \\
-     -o ${sampleID[0]}.MRs.bed \\
+     -o ${sample.getAt(0)}.MRs.bed \\
      -d ${params.DESERT_SIZE} \\
      -i 30 \\
      -m ${params.MERGE_DIST} \\
@@ -419,9 +466,9 @@ process MethylScore_callMRs {
      ${matrixWG} \\
      ${HMM_PARAMETERS}
 
-     echo -e "${sampleID[0]}\t" \\
-        \$(cat ${sampleID[0]}.MRs.bed | wc -l)"\t" \\
-        \$(awk -v OFS=\"\t\" '{sum+=\$3-\$2+1}END{print sum, sprintf("%.0f", sum/NR)}' ${sampleID[0]}.MRs.bed) \\
+     echo -e "${sample.getAt(0)}\t" \\
+        \$(cat ${sample.getAt(0)}.MRs.bed | wc -l)"\t" \\
+        \$(awk -v OFS=\"\t\" '{sum+=\$3-\$2+1}END{print sum, sprintf("%.0f", sum/NR)}' ${sample.getAt(0)}.MRs.bed) \\
         > MR_stats.tsv
     """
 }
@@ -452,7 +499,7 @@ process MethylScore_splitMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
 
     input:
-    val(sampleID) from indexedSamples_splitting.collect()
+    file(samplesheet) from indexedSamples_splitting.collectFile(sort: 'true'){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
     file(MRfile) from MRs_splitting.collect()
 
     output:
@@ -461,13 +508,7 @@ process MethylScore_splitMRs {
 
     script:
     """
-    idx=4
-    for i in ${sampleID.join(' ')}; do
-    	echo -e \$i'\t'\$idx'\t'\$i'.MRs.bed' >> samples.tsv
-        (( idx ++ ))
-    done
-
-    split_MRfile samples.tsv MRbatch ${params.MR_BATCH_SIZE}
+    split_MRfile $samplesheet MRbatch ${params.MR_BATCH_SIZE}
     """
 }
 
