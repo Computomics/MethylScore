@@ -43,13 +43,16 @@ while( <R> ) {
 			$REF{$chr} = $seq;
 		}
 		$chr = substr($_,1);
+                # deal with fasta headers containing more than one word
+                $chr = (split(' ',$chr))[0];
 		$seq = "";
 	}
 	else {
 		$seq .= $_;
 	}
 }
-$REF{$chr} = $seq;
+# make sure bases are uppercase
+$REF{$chr} = uc $seq;
 close R;
 
 print STDERR "reference has been read\n" if ($verbose);
