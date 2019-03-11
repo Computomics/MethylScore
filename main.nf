@@ -175,18 +175,19 @@ Channel
   .from(file(params.SAMPLE_SHEET).readLines())
   .map{ line ->
   list = line.split()
-  def idx = 1
   !params.BEDGRAPH ? [ 'sampleID':list[0], 'seqType':list[1], 'filePath':file(list[2]) ] : [ 'sampleID':list[0], 'filePath':file(list[1]) ]
   }
   .set { inputMap }
 
 def sampleIndex = 1
 inputMap
-  .map { record -> !params.BEDGRAPH ? [ record.sampleID, record.seqType, record.filePath ] : [ record.sampleID, record.filePath , null ] }
-  .tap { samples_bam; samples_bedGraph }
+  .map { record -> !params.BEDGRAPH ? [ record.sampleID, record.seqType, record.filePath ] : [ record.sampleID, record.filePath ] }
+  .tap { samples }
   .groupTuple(sort: 'true')
-  .map { record -> [ record[0], sampleIndex++, record[1] ] }
-  .into{ indexedSamples; indexedSamples_splitting; indexedSamples_MRs}
+  .map { record -> [ record[0], sampleIndex++ ] }
+  .set{ indexedSamples }
+
+(samples_bam, samples_bedGraph) = !params.BEDGRAPH ? [ samples, Channel.empty() ] : [ Channel.empty(), samples ] 
 
 /*
  * Start pipeline
@@ -390,21 +391,21 @@ process MethylScore_mergeContexts {
     publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy'
 
     input:
-    set val(sampleID), val(sampleIndex), file(samplesheet) from indexedSamples
+    set val(sampleID), file(bedGraph) from samples_bedGraph.groupTuple(sort: 'true')
 
     output:
-    set val(sampleID), file("*.bedGraph"), val(null) into mergedContexts
+    set val(sampleID), file("*merged.bedGraph"), val(null) into mergedContexts
 
     when:
     params.BEDGRAPH
 
     script:
     """
-    sort -k1,1d -k2,2g -T . $samplesheet > ${sampleID}.merged.bedGraph
+    sort -k1,1d -k2,2g -T . ${bedGraph} > ${sampleID}.merged.bedGraph
     """
 }
 
-(pile,merged) = params.BEDGRAPH ? mergedContexts.into(2) : consensus.into(2)
+(pile,merged) = params.BEDGRAPH ? mergedContexts.join(indexedSamples).into(2) : consensus.join(indexedSamples).into(2)
 
 process MethylScore_chromosomalmatrix {
     tag "$chromosome"
@@ -412,11 +413,12 @@ process MethylScore_chromosomalmatrix {
 
     input:
     file(samplesheet) from merged.collectFile(sort: 'true'){ record -> [ 'samples.tsv', record[0] + '\t' + record[1] + '\n' ]}
-    set val(sampleID), file(consensus), val(chromosome) from pile.groupTuple(by: 2, sort: 'true')
+    set val(sampleID), file(consensus), val(chromosome), val(sampleIndex) from pile.groupTuple(by: 2, sort: 'true')
     file(fasta) from fasta
 
     output:
     file("*genome_matrix.tsv") into splitMatrix
+    set val(sampleID), val(sampleIndex) into (indexedSamples_splitting, indexedSamples_MRs) mode flatten
 
     script:
     def inputFormat = params.BEDGRAPH ? "-i bismark -r ${fasta}" : "-i mxX"
