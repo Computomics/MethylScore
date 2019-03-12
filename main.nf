@@ -162,9 +162,10 @@ hmm_params_file = file(params.MR_PARAMS)
 Channel
  .fromPath("${params.GENOME}", checkIfExists: true)
  .ifEmpty { exit 1, "${params.GENOME}: not a valid fasta file!" }
- .tap { fasta }
  .splitFasta( record: [id: true, text: true] )
- .set { refSplit }
+ .set { fasta }
+
+(fasta_MethylExtract, fasta_bedGraph) = !params.BEDGRAPH ? [ fasta, Channel.empty() ] : [ Channel.empty(), fasta ]
 
 /*
  * Create a Channel for the tsv file containing samples
@@ -187,7 +188,7 @@ inputMap
   .map { record -> [ record[0], sampleIndex++ ] }
   .set{ indexedSamples }
 
-(samples_bam, samples_bedGraph) = !params.BEDGRAPH ? [ samples, Channel.empty() ] : [ Channel.empty(), samples ] 
+(samples_bam, samples_bedGraph) = !params.BEDGRAPH ? [ samples, Channel.empty() ] : [ Channel.empty(), samples ]
 
 /*
  * Start pipeline
@@ -325,7 +326,7 @@ process MethylScore_splitBams {
 
     input:
     set val(sampleID), val(seqType), file(bamFile) from dedup
-    each chromosome from refSplit
+    each chromosome from fasta_MethylExtract
 
     output:
     set val(sampleID), val(seqType), file('*bam'), val("${chromosome.id}"), val("${chromosome.text}") into chrSplit
@@ -341,26 +342,26 @@ process MethylScore_splitBams {
 }
 
 process MethylScore_callConsensus {
-    tag "$sampleID:$chromosome"
-    publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosome}", mode: 'copy'
+    tag "$sampleID:$chromosomeID"
+    publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(seqType), file(splitBam), val(chromosome), file('reference.fa') from chrSplit
+    set val(sampleID), val(seqType), file(splitBam), val(chromosomeID), file("${chromosomeID}.fa") from chrSplit
 //    each context from (['CG','CHG','CHH']) // TODO: check whether parallelizing could be beneficial for performance here
 
     output:
-    set val(sampleID), file('*allC.output'), val(chromosome) into consensus
+    set val(sampleID), file('*allC.output'), val(chromosomeID), file("${chromosomeID}.fa") into consensus
 
     when:
     !params.BEDGRAPH
 
     script:
-    def flagW = ( seqType[0] == "PE" ? "flagW=99,147 flagC=83,163" : "flagW=0 flagC=16" )
+    def flagW = ( seqType[0] == "PE" ? "flagW=99,147 flagC=83,163 peOverlap=Y" : "flagW=0 flagC=16" )
+
     """
     MethylExtract.pl \\
      seq='.' \\
      inDir='.' \\
-     peOverlap=Y \\
      delDup=N \\
      minQ=${params.MIN_QUAL} \\
      methNonCpGs=0 \\
@@ -379,10 +380,10 @@ process MethylScore_callConsensus {
 
     for context in CG CHG CHH; do
      sort -k1,1 -k2,2n \$context.output |
-     awk -vi=\$context -vs=$sampleID '\$0!~/^#/{OFS="\\t"; \$1=s "\\t" \$1; \$3=i "." \$3; print \$0}' > ${sampleID}.${chromosome}.\$context.output.tmp;
+     awk -vi=\$context -vs=$sampleID '\$0!~/^#/{OFS="\\t"; \$1=s "\\t" \$1; \$3=i "." \$3; print \$0}' > ${sampleID}.${chromosomeID}.\$context.output.tmp;
     done
     
-    sort -m -k2,2 -k3,3n *.output.tmp > ${sampleID}.${chromosome}.allC.output
+    sort -m -k2,2 -k3,3n *.output.tmp > ${sampleID}.${chromosomeID}.allC.output
     """
 }
 
@@ -392,41 +393,41 @@ process MethylScore_mergeContexts {
 
     input:
     set val(sampleID), file(bedGraph) from samples_bedGraph.groupTuple(sort: 'true')
+    each chromosome from fasta_bedGraph
 
     output:
-    set val(sampleID), file("*merged.bedGraph"), val(null) into mergedContexts
+    set val(sampleID), file("*merged.bedGraph"), val("${chromosome.id}"), val("${chromosome.text}") into mergedContexts
 
     when:
     params.BEDGRAPH
 
     script:
     """
-    sort -k1,1d -k2,2g -T . ${bedGraph} > ${sampleID}.merged.bedGraph
+    awk '\$1 == "${chromosome.id}"' ${bedGraph} | sort -k1,1d -k2,2g -T . > ${sampleID}.${chromosome.id}.merged.bedGraph
     """
 }
 
 (pile,merged) = params.BEDGRAPH ? mergedContexts.join(indexedSamples).into(2) : consensus.join(indexedSamples).into(2)
 
 process MethylScore_chromosomalmatrix {
-    tag "$chromosome"
+    tag "${chromosomeID}"
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    file(samplesheet) from merged.collectFile(sort: 'true'){ record -> [ 'samples.tsv', record[0] + '\t' + record[1] + '\n' ]}
-    set val(sampleID), file(consensus), val(chromosome), val(sampleIndex) from pile.groupTuple(by: 2, sort: 'true')
-    file(fasta) from fasta
+    file(samplesheet) from merged.collectFile(sort: 'true'){ record -> [ 'samples.tsv', record[0] + '\t' + record[1] + '\n' ] }
+    set val(sampleID), file(consensus), val(chromosomeID), file("${chromosomeID}.fa"), val(sampleIndex) from pile.groupTuple(by: [2,3], sort: 'true')
 
     output:
     file("*genome_matrix.tsv") into splitMatrix
     set val(sampleID), val(sampleIndex) into (indexedSamples_splitting, indexedSamples_MRs) mode flatten
 
     script:
-    def inputFormat = params.BEDGRAPH ? "-i bismark -r ${fasta}" : "-i mxX"
+    def inputFormat = params.BEDGRAPH ? "-i bismark -r ${chromosomeID}.fa": "-i mxX"
     """
     generate_genome_matrix \\
      -s samples.tsv \\
      ${inputFormat} \\
-     -o ${chromosome}.genome_matrix.tsv
+     -o ${chromosomeID}.genome_matrix.tsv
     """
 }
 
