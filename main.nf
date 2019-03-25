@@ -350,7 +350,7 @@ process MethylScore_callConsensus {
 //    each context from (['CG','CHG','CHH']) // TODO: check whether parallelizing could be beneficial for performance here
 
     output:
-    set val(sampleID), file('*allC.output'), val(chromosomeID), file("${chromosomeID}.fa") into consensus
+    set val(sampleID), file("${sampleID}.allC.output"), val(chromosomeID), val("${chromosomeID}.fa") into consensus
 
     when:
     !params.BEDGRAPH
@@ -383,7 +383,7 @@ process MethylScore_callConsensus {
      awk -vi=\$context -vs=$sampleID '\$0!~/^#/{OFS="\\t"; \$1=s "\\t" \$1; \$3=i "." \$3; print \$0}' > ${sampleID}.${chromosomeID}.\$context.output.tmp;
     done
     
-    sort -m -k2,2 -k3,3n *.output.tmp > ${sampleID}.${chromosomeID}.allC.output
+    sort -m -k2,2 -k3,3n *.output.tmp > ${sampleID}.allC.output
     """
 }
 
@@ -396,36 +396,43 @@ process MethylScore_mergeContexts {
     each chromosome from fasta_bedGraph
 
     output:
-    set val(sampleID), file("*merged.bedGraph"), val("${chromosome.id}"), val("${chromosome.text}") into mergedContexts
+    set val(sampleID), file("${sampleID}.merged.bedGraph"), val("${chromosome.id}"), val("${chromosome.text}") into mergedContexts
 
     when:
     params.BEDGRAPH
 
     script:
     """
-    awk '\$1 == "${chromosome.id}"' ${bedGraph} | sort -k1,1d -k2,2g -T . > ${sampleID}.${chromosome.id}.merged.bedGraph
+    awk '\$1 == "${chromosome.id}"' ${bedGraph} | sort -k1,1d -k2,2g -T . > ${sampleID}.merged.bedGraph
     """
 }
 
-(pile,merged) = params.BEDGRAPH ? mergedContexts.join(indexedSamples).into(2) : consensus.join(indexedSamples).into(2)
+indexedSamples
+ .combine(consensus.mix(mergedContexts), by: 0)
+ .groupTuple(by: [3,4], sort: 'true')
+ .set {pile}
 
 process MethylScore_chromosomalmatrix {
     tag "${chromosomeID}"
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    file(samplesheet) from merged.collectFile(sort: 'true'){ record -> [ 'samples.tsv', record[0] + '\t' + record[1] + '\n' ] }
-    set val(sampleID), file(consensus), val(chromosomeID), file("${chromosomeID}.fa"), val(sampleIndex) from pile.groupTuple(by: [2,3], sort: 'true')
+    set val(sampleID), val(sampleIndex), file(consensus), val(chromosomeID), file("${chromosomeID}.fa") from pile
 
     output:
-    file("*genome_matrix.tsv") into splitMatrix
+    file("${chromosomeID}.genome_matrix.tsv") into splitMatrix
     set val(sampleID), val(sampleIndex) into (indexedSamples_splitting, indexedSamples_MRs) mode flatten
 
     script:
     def inputFormat = params.BEDGRAPH ? "-i bismark -r ${chromosomeID}.fa": "-i mxX"
+
     """
+    for i in ${sampleID.join(' ')}; do
+      echo -e \$i'\t'\$i'.allC.output' >> ${chromosomeID}_samples.tsv;
+    done
+     
     generate_genome_matrix \\
-     -s samples.tsv \\
+     -s ${chromosomeID}_samples.tsv \\
      ${inputFormat} \\
      -o ${chromosomeID}.genome_matrix.tsv
     """
@@ -441,7 +448,7 @@ process MethylScore_callMRs {
 
     input:
     file(matrixWG) from matrixWG_MRs
-    each sample from indexedSamples_MRs
+    each sample from indexedSamples_MRs.unique()
     file(parameters) from hmm_params_file
 
     output:
@@ -502,7 +509,7 @@ process MethylScore_splitMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
 
     input:
-    file(samplesheet) from indexedSamples_splitting.collectFile(sort: 'true'){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
+    file(samplesheet) from indexedSamples_splitting.unique().collectFile(sort: 'true'){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
     file(MRfile) from MRs_splitting.collect()
 
     output:
