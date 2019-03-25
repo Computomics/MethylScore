@@ -584,5 +584,6 @@ process MethylScore_mergeDMRs {
      ${params.REMOVE_INTMED_FILES}
 
     sort -k1,1V -k2 -o DMRs.bed DMRs.bed
+    sort -k1,1V -k2 -o all_context_DMRs.bed all_context_DMRs.bed
     """
 }
