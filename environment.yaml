@@ -5,7 +5,7 @@ channels:
   - defaults
 dependencies:
   - coreutils
-  - python=2.7
+  - python
   - samtools=1.9
   - tabix=0.2.5
   - bamtools=2.5.1
