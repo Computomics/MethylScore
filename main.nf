@@ -26,18 +26,16 @@ params.SAMPLE_SHEET = false
 params.BEDGRAPH = false
 params.PROJECT_FOLDER = "./results"
 
-params.FORCE_RERUN = 0
-params.HUMAN = 0
-params.REMOVE_INTMED_FILES = 0
-params.ROI = 'not specified' 
+params.HUMAN = false
+params.ROI = false
 
 params.SCRIPT_PATH = "scripts"
 params.BIN_PATH = "bin"
 params.EXTBIN_PATH = "bin_ext"
 
-params.STATISTICS = 1
-params.IGV = 0
-params.DO_DEDUP = 1
+params.STATISTICS = true
+params.IGV = false
+params.DO_DEDUP = true
 
 // DMR parameters
 params.MR_FREQ_CHANGE = 20
@@ -63,7 +61,7 @@ params.MR_MIN_C = 20
 params.DESERT_SIZE = 100
 params.TRIM_METHRATE = 10
 params.MERGE_DIST = 30
-params.MR_PARAMS = 'not specified'
+params.MR_PARAMS = false
 
 params.DEBUG = false
 
@@ -71,12 +69,10 @@ params.DEBUG = false
 assert params.SAMPLE_SHEET, "samplesheet.tsv has to be specified!"
 assert params.GENOME, "reference genome in fasta format has to be specified!"
 
-assert params.HUMAN == 0 || params.HUMAN == 1, "HUMAN must be set to either 0 (off) or 1 (on)"
-assert params.IGV == 0 || params.IGV == 1, "IGV must be set to either 0 (off) or 1 (on)"
-assert params.STATISTICS == 0 || params.STATISTICS == 1, "STATISTICS must be set to either 0 (off) or 1 (on)"
-assert params.FORCE_RERUN == 0 || params.FORCE_RERUN == 1, "FORCE_RERUN must be set to either 0 (off) or 1 (on)"
-assert params.REMOVE_INTMED_FILES == 0 || params.REMOVE_INTMED_FILES == 1, "REMOVE_INTMED_FILES must be set to either 0 (off) or 1 (on)"
-assert params.DO_DEDUP == 0 || params.DO_DEDUP == 1, "DO_DEDUP must be set to either 0 (off) or 1 (on)"
+assert params.HUMAN instanceof Boolean, "HUMAN must be set to either false (off) or true (on)"
+assert params.IGV instanceof Boolean, "IGV must be set to either false (off) or true (on)"
+assert params.STATISTICS instanceof Boolean, "STATISTICS must be set to either false (off) or true (on)"
+assert params.DO_DEDUP instanceof Boolean, "DO_DEDUP must be set to either false (off) or true (on)"
 
 assert params.MR_FREQ_CHANGE in 0..100, "MR_FREQ_CHANGE must be between 0 and 100!"
 assert params.CLUSTER_MIN_METH_DIFF in 0..100, "CLUSTER_MIN_METH_DIFF must be between 0 and 100!"
@@ -125,11 +121,10 @@ log.info "CLUSTER_PROJECT       : ${params.CLUSTER_PROJECT}"
 log.info "DESERT_SIZE           : ${params.DESERT_SIZE}"
 log.info "DMR_MIN_C             : ${params.DMR_MIN_C}"
 log.info "DMR_MIN_COV           : ${params.DMR_MIN_COV}"
-log.info "DO_DEDUP              : ${params.DO_DEDUP ? "Yes" : "No"}"
+log.info "DO_DEDUP              : ${params.DO_DEDUP}"
 log.info "FDR_CUTOFF            : ${params.FDR_CUTOFF}"
-log.info "FORCE_RERUN           : ${params.FORCE_RERUN}"
 log.info "HDMR_FOLD_CHANGE      : ${params.HDMR_FOLD_CHANGE}"
-log.info "HUMAN                 : ${params.HUMAN ? "Yes" : "No"}"
+log.info "HUMAN                 : ${params.HUMAN}"
 log.info "IGNORE_FIRST_BP       : ${params.IGNORE_FIRST_BP}"
 log.info "IGNORE_LAST_BP        : ${params.IGNORE_LAST_BP}"
 log.info "MERGE_DIST            : ${params.MERGE_DIST}"
@@ -140,20 +135,20 @@ log.info "MR_FREQ_CHANGE        : ${params.MR_FREQ_CHANGE}"
 log.info "MR_FREQ_DISTANCE      : ${params.MR_FREQ_DISTANCE}"
 log.info "MR_MIN_C              : ${params.MR_MIN_C}"
 log.info "PROJECT_FOLDER        : ${params.PROJECT_FOLDER}"
-log.info "REMOVE_INTMED_FILES   : ${params.REMOVE_INTMED_FILES ? "Yes" : "No"}"
 log.info "ROI                   : ${params.ROI}"
 log.info "MR_PARAMS             : ${params.MR_PARAMS}"
 log.info "SAMPLE_SHEET          : ${params.SAMPLE_SHEET}"
 log.info "SLIDING_WINDOW_SIZE   : ${params.SLIDING_WINDOW_SIZE}"
 log.info "SLIDING_WINDOW_STEP   : ${params.SLIDING_WINDOW_STEP}"
-log.info "STATISTICS            : ${params.STATISTICS ? "Yes" : "No"}"
+log.info "STATISTICS            : ${params.STATISTICS}"
 log.info "TRIM_METHRATE         : ${params.TRIM_METHRATE}"
 log.info "---------------------------------------------------"
 log.info "Config Profile : ${workflow.profile}"
 log.info "=================================================="
 
-roi_file = file(params.ROI)
-hmm_params_file = file(params.MR_PARAMS)
+roi_file = params.ROI ? Channel.fromPath("${params.ROI}", checkIfExists: true).collect() : file('null')
+
+hmm_params_file = params.MR_PARAMS ? Channel.fromPath("${params.MR_PARAMS}", checkIfExists: true).collect() : file('null')
 
 /*
  * Create a channel for the reference genome and split it by chromosome
@@ -225,7 +220,7 @@ process MethylScore_mergeReplicates {
     set val(sampleID), val(seqType), file(bamFile) from passQC.groupTuple(sort: 'true')
 
     output:
-    set val(sampleID), val(seqType), file('*merged.passQC.bam') into (mergedSamples, mergedSampleSheet)
+    set val(sampleID), val(seqType), file('*merged.passQC.bam') into mergedSamples
 
     when:
     !params.BEDGRAPH
@@ -296,27 +291,21 @@ process MethylScore_readStatistics {
     file ('*') into readStats
 
     when:
-    params.STATISTICS == 1 && !params.BEDGRAPH
+    params.STATISTICS && !params.BEDGRAPH
    
     script:
-    if( bed.name != 'not specified' )
-       """
-       ${baseDir}/${params.SCRIPT_PATH}/read_stats.sh \\
-          ${sampleID} \\
-          ${bamFile} \\
-          ${bed}
+    def REGIONS_FILE = bed.name != 'null' ? "${bed}" : ""
 
-       ${baseDir}/${params.SCRIPT_PATH}/cov_stats.sh \\
-          ${sampleID} \\
-          ${bamFile} \\
-          ${bed}
-       """
-    else
-       """
-       ${baseDir}/${params.SCRIPT_PATH}/read_stats.sh \\
-          ${sampleID} \\
-          ${bamFile} \\
-          "" 
+    """
+    ${baseDir}/${params.SCRIPT_PATH}/read_stats.sh \\
+     ${sampleID} \\
+     ${bamFile} \\
+     ${REGIONS_FILE}
+
+    ${baseDir}/${params.SCRIPT_PATH}/cov_stats.sh \\
+     ${sampleID} \\
+     ${bamFile} \\
+     ${REGIONS_FILE}
     """
 }
 
@@ -452,14 +441,15 @@ process MethylScore_callMRs {
     file(parameters) from hmm_params_file
 
     output:
-    file('*MRs.bed') into (MRs_igv, MRs_splitting)
-    file('*.params') optional true into hmmparams
-    file('*.tsv') into MRstats
+    file("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_splitting)
+    file("${sample.getAt(0)}.params") optional true into hmmparams
+    file("${sample.getAt(0)}.MR_stats.tsv") into MRstats
 
     script:
-    def HUMAN = ( params.HUMAN != 0 ? "-human" : "" )
-    def MIN_C = ( params.MR_MIN_C > 0 ? "-n ${params.MR_MIN_C}" : "-n -1" )
-    def HMM_PARAMETERS = ( parameters.name != 'not specified' ? "-P $parameters" : "" )
+    def HUMAN = params.HUMAN ? "-human" : ""
+    def MIN_C = params.MR_MIN_C > 0 ? "-n ${params.MR_MIN_C}" : "-n -1"
+    def HMM_PARAMETERS = parameters.name != 'null' ? "-P $parameters" : "-p ${sample.getAt(0)}.hmm.params"
+
     """
     hmm_mrs \\
      -x ${sample.getAt(1)} \\
@@ -470,7 +460,6 @@ process MethylScore_callMRs {
      -i 30 \\
      -m ${params.MERGE_DIST} \\
      -t ${params.TRIM_METHRATE/100} \\
-     -p hmm.params \\
      ${HUMAN} \\
      ${MIN_C} \\
      ${matrixWG} \\
@@ -479,12 +468,12 @@ process MethylScore_callMRs {
      echo -e "${sample.getAt(0)}\t" \\
         \$(cat ${sample.getAt(0)}.MRs.bed | wc -l)"\t" \\
         \$(awk -v OFS=\"\t\" '{sum+=\$3-\$2+1}END{print sum, sprintf("%.0f", sum/NR)}' ${sample.getAt(0)}.MRs.bed) \\
-        > MR_stats.tsv
+        > ${sample.getAt(0)}.MR_stats.tsv
     """
 }
 
 process MethylScore_igv {
-    tag "batchsize:${params.MR_BATCH_SIZE}"
+    tag "$bed"
     publishDir "${params.PROJECT_FOLDER}/igv", mode: 'copy'
 
     input:
@@ -492,10 +481,10 @@ process MethylScore_igv {
     file(matrixWG) from matrixWG_igv
 
     output:
-    file('*') into igv
+    file('methinfo.igv') into igv
 
     when:
-    params.IGV == true
+    params.IGV
  
     script:
     """
@@ -580,8 +569,7 @@ process MethylScore_mergeDMRs {
      ${params.FDR_CUTOFF} \\
      ${params.CLUSTER_MIN_METH} \\
      ${params.DMR_MIN_C} \\
-     ${params.HDMR_FOLD_CHANGE} \\
-     ${params.REMOVE_INTMED_FILES}
+     ${params.HDMR_FOLD_CHANGE}
 
     sort -k1,1V -k2 -o DMRs.bed DMRs.bed
     sort -k1,1V -k2 -o all_context_DMRs.bed all_context_DMRs.bed

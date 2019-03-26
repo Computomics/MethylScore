@@ -8,35 +8,34 @@ BIN_PATH : "bin"
 
 ### General options
 
-# IGV output?
-IGV : 0
+# Call DMRs from bedGraph input?
+BEDGRAPH : false
 
-# reference genome
+# IGV output?
+IGV : true
+
+# Reference genome in fasta format (absolute path)
 GENOME : "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
 
-# project folder (relative to folder of this config file, or absolute path)
+# project folder (absolute path)
 PROJECT_FOLDER : "./results"
 
-# sample sheet file (relative to folder of this config file, or absolute path)
+# sample sheet file (absolute path)
 SAMPLE_SHEET : "./samplesheet.tsv"
 
-# regions of interest in bed file format (relative to folder of this config file, or absolute path)
-ROI : 'not specified'
+# regions of interest in bed file format (absolute path)
+ROI : false
 
 # Output basic statistics?
-STATISTICS : 1
+STATISTICS : true
 
 # Perform read de-duplication?
-DO_DEDUP : 1
+DO_DEDUP : true
 
 # Dealing with human methylation data?
-HUMAN : 0
-
-# Remove intermediate files?
-REMOVE_INTMED_FILES : 1
+HUMAN : false
 
 ### DMR options:
-
 
 # Percent MR frequency change (across all samples) leading to segment break
 MR_FREQ_CHANGE : 20
@@ -71,14 +70,12 @@ FDR_CUTOFF : 0.05
 # Minimum fold change between clusters to call hDMRs:
 HDMR_FOLD_CHANGE : 3
 
-
 ### MR options:
 
 # minimum per-site coverage to consider
 MIN_COVERAGE : 1
 
-# don't span a region of this minimum size without covered cytosines, rather
-# start separate HMM path
+# don't span a region of this minimum size without covered cytosines, rather start separate HMM path
 DESERT_SIZE : 100
 
 # Minimum number of covered cytosines within MRs, turns off permutation test (set to -1 for turning on the permutation test)
@@ -90,8 +87,8 @@ MERGE_DIST : 30
 # trim sites off both MR ends below this methylation level
 TRIM_METHRATE : 10
 
-# provide parameter file for calling MRs on all samples (leave empty if it should be trained anew)
-MR_PARAMS : 'not specified'
+# provide parameter file for calling MRs on all samples (set to false if it should be trained anew)
+MR_PARAMS : false
 
 ### Consensus options:
 
