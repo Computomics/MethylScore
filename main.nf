@@ -156,7 +156,6 @@ hmm_params_file = params.MR_PARAMS ? Channel.fromPath("${params.MR_PARAMS}", che
 
 Channel
  .fromPath("${params.GENOME}", checkIfExists: true)
- .ifEmpty { exit 1, "${params.GENOME}: not a valid fasta file!" }
  .splitFasta( record: [id: true, text: true] )
  .set { fasta }
 
@@ -168,11 +167,12 @@ Channel
  */
 
 Channel
-  .from(file(params.SAMPLE_SHEET).readLines())
+  .fromPath("${params.SAMPLE_SHEET}", checkIfExists: true)
+  .splitText()
   .map{ line ->
-  list = line.split()
-  !params.BEDGRAPH ? [ 'sampleID':list[0], 'seqType':list[1], 'filePath':file(list[2]) ] : [ 'sampleID':list[0], 'filePath':file(list[1]) ]
-  }
+        def list = line.split()
+        !params.BEDGRAPH ? [ 'sampleID':list[0], 'seqType':list[1], 'filePath':file(list[2]) ] : [ 'sampleID':list[0], 'filePath':file(list[1]) ]
+      }
   .set { inputMap }
 
 def sampleIndex = 1
