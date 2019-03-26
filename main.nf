@@ -556,7 +556,8 @@ process MethylScore_mergeDMRs {
     file(samples) from samples_mergeDMRs
 
     output:
-    file('*') into DMRs
+    file('DMRs.bed') into DMRs
+    file('all_context_DMRs.bed') into all_context_DMRs
 
     script:
     """
@@ -574,4 +575,11 @@ process MethylScore_mergeDMRs {
     sort -k1,1V -k2 -o DMRs.bed DMRs.bed
     sort -k1,1V -k2 -o all_context_DMRs.bed all_context_DMRs.bed
     """
+}
+
+workflow.onComplete {
+    println()
+    println "MethylScore completed at: $workflow.complete"
+    println "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
+    println DMRs.getVal().countLines() + " DMRs found."
 }
