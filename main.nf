@@ -179,8 +179,8 @@ def sampleIndex = 1
 inputMap
   .map { record -> !params.BEDGRAPH ? [ record.sampleID, record.seqType, record.filePath ] : [ record.sampleID, record.filePath ] }
   .tap { samples }
-  .groupTuple(sort: 'true')
-  .map { record -> [ record[0], sampleIndex++ ] }
+  .groupTuple()
+  .map { record -> tuple( record[0], sampleIndex++ ) }
   .set{ indexedSamples }
 
 (samples_bam, samples_bedGraph) = !params.BEDGRAPH ? [ samples, Channel.empty() ] : [ Channel.empty(), samples ]
@@ -217,7 +217,7 @@ process MethylScore_mergeReplicates {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(seqType), file(bamFile) from passQC.groupTuple(sort: 'true')
+    set val(sampleID), val(seqType), file(bamFile) from passQC.groupTuple()
 
     output:
     set val(sampleID), val(seqType), file('*merged.passQC.bam') into mergedSamples
@@ -381,7 +381,7 @@ process MethylScore_mergeContexts {
     publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy'
 
     input:
-    set val(sampleID), file(bedGraph) from samples_bedGraph.groupTuple(sort: 'true')
+    set val(sampleID), file(bedGraph) from samples_bedGraph.groupTuple()
     each chromosome from fasta_bedGraph
 
     output:
@@ -398,7 +398,7 @@ process MethylScore_mergeContexts {
 
 indexedSamples
  .combine(consensus.mix(mergedContexts), by: 0)
- .groupTuple(by: [3,4], sort: 'true')
+ .groupTuple(by: [3,4])
  .set {pile}
 
 process MethylScore_chromosomalmatrix {
@@ -406,20 +406,19 @@ process MethylScore_chromosomalmatrix {
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    set val(sampleID), val(sampleIndex), file(consensus), val(chromosomeID), file("${chromosomeID}.fa") from pile
+    set val(sampleID), val(Index), file(consensus), val(chromosomeID), file("${chromosomeID}.fa") from pile
 
     output:
     file("${chromosomeID}.genome_matrix.tsv") into splitMatrix
-    set val(sampleID), val(sampleIndex) into (indexedSamples_splitting, indexedSamples_MRs) mode flatten
+    set val(sampleID), val(Index) into (indexedSamples_splitting, indexedSamples_MRs) mode flatten
 
     script:
     def inputFormat = params.BEDGRAPH ? "-i bismark -r ${chromosomeID}.fa": "-i mxX"
 
     """
-    for i in ${sampleID.join(' ')}; do
-      echo -e \$i'\t'\$i'.allC.output' >> ${chromosomeID}_samples.tsv;
-    done
-     
+    paste <(printf "${sampleID.sort{ it.getAt(Index) }.join('\n')}") \\
+          <(printf "${consensus.toList().sort{ it.baseName.getAt(Index) }.join('\n')}") > ${chromosomeID}_samples.tsv
+
     generate_genome_matrix \\
      -s ${chromosomeID}_samples.tsv \\
      ${inputFormat} \\
@@ -498,7 +497,7 @@ process MethylScore_splitMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
 
     input:
-    file(samplesheet) from indexedSamples_splitting.unique().collectFile(sort: 'true'){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
+    file(samplesheet) from indexedSamples_splitting.unique().collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
     file(MRfile) from MRs_splitting.collect()
 
     output:
@@ -583,6 +582,5 @@ workflow.onComplete {
      println "[$workflow.complete] >> MethylScore finished SUCCESSFULLY after $workflow.duration and found ${DMRs.getVal().countLines()} DMRs"
     } else {
      println "[$workflow.complete] >> MethylScore finished with ERRORS after $workflow.duration"
-     println workflow.errorReport
     }
 }
