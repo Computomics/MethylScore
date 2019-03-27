@@ -93,7 +93,7 @@ assert params.IGNORE_LAST_BP instanceof Integer && params.IGNORE_LAST_BP >= 0, "
 assert params.MIN_COVERAGE instanceof Integer && params.MIN_COVERAGE > 0, "MIN_COVERAGE must be a non-negative integer!"
 assert params.DESERT_SIZE instanceof Integer && params.DESERT_SIZE > 0, "DESERT_SIZE must be a non-negative integer!"
 assert params.MERGE_DIST instanceof Integer && params.MERGE_DIST > 0, "MERGE_DIST must be a non-negative integer!"
-assert params.MR_MIN_C instanceof Integer && params.MR_MIN_C > 0, "MR_MIN_C must be a non-negative integer!"
+assert params.MR_MIN_C instanceof Integer, "MR_MIN_C must be an integer! Negative value turns on permutation test."
 assert params.TRIM_METHRATE in 0..100, "TRIM_METHRATE must be between 0 and 100!"
 
 
