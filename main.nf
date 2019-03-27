@@ -579,7 +579,10 @@ process MethylScore_mergeDMRs {
 
 workflow.onComplete {
     println()
-    println "MethylScore completed at: $workflow.complete"
-    println "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
-    println DMRs.getVal().countLines() + " DMRs found."
+    if ( workflow.success ) {
+     println "[$workflow.complete] >> MethylScore finished SUCCESSFULLY after $workflow.duration and found ${DMRs.getVal().countLines()} DMRs"
+    } else {
+     println "[$workflow.complete] >> MethylScore finished with ERRORS after $workflow.duration"
+     println workflow.errorReport
+    }
 }
