@@ -441,13 +441,13 @@ process MethylScore_callMRs {
 
     output:
     file("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_splitting)
-    file("${sample.getAt(0)}.params") optional true into hmmparams
+    file("${sample.getAt(0)}.hmm_params") optional true into hmm_params
     file("${sample.getAt(0)}.MR_stats.tsv") into MRstats
 
     script:
     def HUMAN = params.HUMAN ? "-human" : ""
     def MIN_C = params.MR_MIN_C > 0 ? "-n ${params.MR_MIN_C}" : "-n -1"
-    def HMM_PARAMETERS = parameters.name != 'null' ? "-P $parameters" : "-p ${sample.getAt(0)}.hmm.params"
+    def HMM_PARAMETERS = parameters.name != 'null' ? "-P $parameters" : "-p ${sample.getAt(0)}.hmm_params"
 
     """
     hmm_mrs \\
