@@ -11,7 +11,6 @@
 ----------------------------------------------------------------------------------------
 */
 
-
 /*
  * SET UP CONFIGURATION VARIABLES
  */
@@ -416,8 +415,9 @@ process MethylScore_chromosomalmatrix {
     def inputFormat = params.BEDGRAPH ? "-i bismark -r ${chromosomeID}.fa": "-i mxX"
 
     """
-    paste <(printf "${sampleID.sort{ it.getAt( Index.sort()) }.join('\n')}") \\
-          <(printf "${consensus.toList().sort{ it.baseName.getAt( Index.sort() ) }.join('\n')}") > ${chromosomeID}_samples.tsv
+    paste <(printf "${sampleID.join('\n')}") \\
+          <(printf "${consensus.join('\n')}") \\
+          <(printf "${Index.join('\n')}") | sort -k 3 > ${chromosomeID}_samples.tsv
 
     generate_genome_matrix \\
      -s ${chromosomeID}_samples.tsv \\
