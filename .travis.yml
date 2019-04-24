@@ -1,0 +1,21 @@
+sudo: required
+language: python
+jdk: openjdk8
+services: docker
+matrix:
+  fast_finish: true
+
+before_install:
+  - docker pull beckerlab/methylscore:latest
+
+install:
+  - mkdir /tmp/nextflow && cd /tmp/nextflow
+  - wget -qO- get.nextflow.io | bash
+  - sudo ln -s /tmp/nextflow/nextflow /usr/local/bin/nextflow
+
+env:
+  - SHEET='https://github.com/Gregor-Mendel-Institute/MethylScore-nf/raw/travis/samplesheet.tsv'
+  - FASTA='https://github.com/Gregor-Mendel-Institute/MethylScore-nf/raw/travis/ref.fasta'
+
+script:
+  - nextflow run ${TRAVIS_BUILD_DIR} --GENOME=$FASTA --SAMPLE_SHEET=$SHEET -profile local,docker
