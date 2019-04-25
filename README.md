@@ -51,14 +51,13 @@ Note that you have to provide one of them with the `-profile` flag.
 
 ### singularity
 The singularity profile uses a container with a basic linux system that includes all dependencies needed to run the pipeline.
-Because the `Singularity` deployment on MENDEL lacks some features (caused by the compute nodes running a very outdated linux kernel), the image has to be build externally using the `Singularity` and `environment.yaml` files.
-```bash
-singularity build MethylScore.simg Singularity
-```
+
+_Mendel only:_
 A prebuilt image is located at `/lustre/scratch/projects/becker_common/singularity_images/MethylScore.simg`and is used automatically when `-profile mendel,singularity` is set.
+
 
 ### conda
 The conda profile uses the conda system to resolve dependencies. It creates virtual environment and resolves dependencies according to the `environment.yaml` file.
 To run on mendel, you have to `module load Miniconda3` first.
 
-Note: with `-profile local,conda` you can easily run the pipeline on your local computer, given you have nextflow and conda installed.
+Note: with `-profile local,conda` or `-profile local,docker` you can easily run the pipeline on your local computer, given you have nextflow and conda or docker installed.
