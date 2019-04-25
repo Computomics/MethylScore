@@ -19,7 +19,6 @@
 version = "0.1.14-nf"
 
 // General parameters
-params.CLUSTER_PROJECT = "becker_common"
 params.GENOME = "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
 params.SAMPLE_SHEET = false
 params.BEDGRAPH = false
@@ -27,10 +26,6 @@ params.PROJECT_FOLDER = "./results"
 
 params.HUMAN = false
 params.ROI = false
-
-params.SCRIPT_PATH = "scripts"
-params.BIN_PATH = "bin"
-params.EXTBIN_PATH = "bin_ext"
 
 params.STATISTICS = true
 params.IGV = false
@@ -100,7 +95,6 @@ log.info "=================================================="
 log.info " MethylScore ${version}"
 log.info "=================================================="
 log.info "Reference genome      : ${params.GENOME}"
-log.info "Project               : ${params.CLUSTER_PROJECT}"
 log.info "Current home          : $HOME"
 log.info "Current user          : $USER"
 log.info "Current path          : $PWD"
@@ -110,13 +104,8 @@ log.info "Output dir            : ${params.PROJECT_FOLDER}"
 log.info "---------------------------------------------------"
 log.info "IGV output            : ${params.IGV}"
 log.info "---------------------------------------------------"
-log.info "BIN_PATH              : ${params.BIN_PATH}"
-log.info "EXTBIN_PATH           : ${params.EXTBIN_PATH}"
-log.info "SCRIPT_PATH           : ${params.SCRIPT_PATH}"
-log.info "---------------------------------------------------"
 log.info "CLUSTER_MIN_METH      : ${params.CLUSTER_MIN_METH}"
 log.info "CLUSTER_MIN_METH_DIFF : ${params.CLUSTER_MIN_METH_DIFF}"
-log.info "CLUSTER_PROJECT       : ${params.CLUSTER_PROJECT}"
 log.info "DESERT_SIZE           : ${params.DESERT_SIZE}"
 log.info "DMR_MIN_C             : ${params.DMR_MIN_C}"
 log.info "DMR_MIN_COV           : ${params.DMR_MIN_COV}"
@@ -133,7 +122,6 @@ log.info "MR_BATCH_SIZE         : ${params.MR_BATCH_SIZE}"
 log.info "MR_FREQ_CHANGE        : ${params.MR_FREQ_CHANGE}"
 log.info "MR_FREQ_DISTANCE      : ${params.MR_FREQ_DISTANCE}"
 log.info "MR_MIN_C              : ${params.MR_MIN_C}"
-log.info "PROJECT_FOLDER        : ${params.PROJECT_FOLDER}"
 log.info "ROI                   : ${params.ROI}"
 log.info "MR_PARAMS             : ${params.MR_PARAMS}"
 log.info "SAMPLE_SHEET          : ${params.SAMPLE_SHEET}"
@@ -145,16 +133,16 @@ log.info "---------------------------------------------------"
 log.info "Config Profile : ${workflow.profile}"
 log.info "=================================================="
 
-roi_file = params.ROI ? Channel.fromPath("${params.ROI}", checkIfExists: true).collect() : file('null')
+roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
 
-hmm_params_file = params.MR_PARAMS ? Channel.fromPath("${params.MR_PARAMS}", checkIfExists: true).collect() : file('null')
+hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfExists: true).collect() : file('null')
 
 /*
  * Create a channel for the reference genome and split it by chromosome
  */
 
 Channel
- .fromPath("${params.GENOME}", checkIfExists: true)
+ .fromPath(params.GENOME, checkIfExists: true)
  .splitFasta( record: [id: true, text: true] )
  .set { fasta }
 
@@ -166,7 +154,7 @@ Channel
  */
 
 Channel
-  .fromPath("${params.SAMPLE_SHEET}", checkIfExists: true)
+  .fromPath(params.SAMPLE_SHEET, checkIfExists: true)
   .splitText()
   .map{ line ->
         def list = line.split()
@@ -296,12 +284,12 @@ process MethylScore_readStatistics {
     def REGIONS_FILE = bed.name != 'null' ? "${bed}" : ""
 
     """
-    ${baseDir}/${params.SCRIPT_PATH}/read_stats.sh \\
+    read_stats.sh \\
      ${sampleID} \\
      ${bamFile} \\
      ${REGIONS_FILE}
 
-    ${baseDir}/${params.SCRIPT_PATH}/cov_stats.sh \\
+    cov_stats.sh \\
      ${sampleID} \\
      ${bamFile} \\
      ${REGIONS_FILE}
@@ -488,7 +476,7 @@ process MethylScore_igv {
     script:
     """
     sort -m -k1,1 -k2,2g -k3,3g ${bed} > MRs.merged.bed
-    python ${baseDir}/${params.SCRIPT_PATH}/matrix2igv.py -i ${matrixWG} -m MRs.merged.bed -o methinfo.igv
+    python matrix2igv.py -i ${matrixWG} -m MRs.merged.bed -o methinfo.igv
     """
 }
 
@@ -539,8 +527,8 @@ process MethylScore_callDMRs {
      -w ${params.SLIDING_WINDOW_SIZE} \\
      -x ${params.SLIDING_WINDOW_STEP} \\
      -z 1 \\
-     -B ${baseDir}/${params.BIN_PATH}/betabin_model \\
-     -Y ${baseDir}/${params.SCRIPT_PATH}/pv2qv.py \\
+     -B $baseDir/bin/betabin_model \\
+     -Y $baseDir/bin/pv2qv.py \\
      --no-post-process \\
      -o ${chunk}.out
     """
@@ -565,7 +553,7 @@ process MethylScore_mergeDMRs {
      ${segments} \\
      . \\
      python \\
-     ${baseDir}/${params.SCRIPT_PATH}/pv2qv.py \\
+     $baseDir/bin/pv2qv.py \\
      ${params.FDR_CUTOFF} \\
      ${params.CLUSTER_MIN_METH} \\
      ${params.DMR_MIN_C} \\

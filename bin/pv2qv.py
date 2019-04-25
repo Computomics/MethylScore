@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #  Copyright (C) 2011 Oliver Stegle, modified by Joerg Hagmann
 #
 #  This program is free software: you can redistribute it and/or modify
