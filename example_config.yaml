@@ -2,10 +2,6 @@
 # MethylScore configuration file
 ################################
 
-CLUSTER_PROJECT : "becker_common"
-SCRIPT_PATH : "scripts"
-BIN_PATH : "bin"
-
 ### General options
 
 # Call DMRs from bedGraph input?
