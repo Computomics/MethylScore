@@ -4,13 +4,11 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - coreutils
-  - python=2.7
   - samtools=1.9
   - tabix=0.2.5
   - bamtools=2.5.1
   - bedtools=2.27.1
   - picard=2.18.11
-  - scipy=1.1.0
+  - scipy=1.2.1
   - perl=5.26.2
   - methylextract=1.9.1
