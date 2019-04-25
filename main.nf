@@ -11,127 +11,58 @@
 ----------------------------------------------------------------------------------------
 */
 
-/*
- * SET UP CONFIGURATION VARIABLES
- */
+// validate parameters
+ParameterChecks.checkParams(params)
 
-// Pipeline version
-version = "0.1.14-nf"
-
-// General parameters
-params.GENOME = "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
-params.SAMPLE_SHEET = false
-params.BEDGRAPH = false
-params.PROJECT_FOLDER = "./results"
-
-params.HUMAN = false
-params.ROI = false
-
-params.STATISTICS = true
-params.IGV = false
-params.DO_DEDUP = true
-
-// DMR parameters
-params.MR_FREQ_CHANGE = 20
-params.MR_FREQ_DISTANCE = 30
-params.CLUSTER_MIN_METH = 20
-params.CLUSTER_MIN_METH_DIFF = 20
-params.SLIDING_WINDOW_SIZE = 0
-params.SLIDING_WINDOW_STEP = 0
-params.DMR_MIN_C = 10
-params.DMR_MIN_COV = 3
-params.MR_BATCH_SIZE = 500
-params.HDMR_FOLD_CHANGE = 3
-params.FDR_CUTOFF = 0.05
-
-// Consensus parameters
-params.MIN_QUAL = 30
-params.IGNORE_FIRST_BP = 3
-params.IGNORE_LAST_BP = 1
-
-// MR parameters
-params.MIN_COVERAGE = 1
-params.MR_MIN_C = 20
-params.DESERT_SIZE = 100
-params.TRIM_METHRATE = 10
-params.MERGE_DIST = 30
-params.MR_PARAMS = false
-
-params.DEBUG = false
-
-// Parameter checks
-assert params.SAMPLE_SHEET, "samplesheet.tsv has to be specified!"
-assert params.GENOME, "reference genome in fasta format has to be specified!"
-
-assert params.HUMAN instanceof Boolean, "HUMAN must be set to either false (off) or true (on)"
-assert params.IGV instanceof Boolean, "IGV must be set to either false (off) or true (on)"
-assert params.STATISTICS instanceof Boolean, "STATISTICS must be set to either false (off) or true (on)"
-assert params.DO_DEDUP instanceof Boolean, "DO_DEDUP must be set to either false (off) or true (on)"
-
-assert params.MR_FREQ_CHANGE in 0..100, "MR_FREQ_CHANGE must be between 0 and 100!"
-assert params.CLUSTER_MIN_METH_DIFF in 0..100, "CLUSTER_MIN_METH_DIFF must be between 0 and 100!"
-assert params.CLUSTER_MIN_METH in 0..100, "CLUSTER_MIN_METH must be between 0 and 100!"
-assert params.MR_FREQ_DISTANCE instanceof Integer && params.MR_FREQ_DISTANCE >= 0, "MR_FREQ_DISTANCE must be a non-negative integer!"
-assert params.SLIDING_WINDOW_SIZE instanceof Integer && params.SLIDING_WINDOW_SIZE >= 0, "SLIDING_WINDOW_SIZE must be a non-negative integer!"
-assert params.SLIDING_WINDOW_STEP instanceof Integer && params.SLIDING_WINDOW_STEP >= 0, "SLIDING_WINDOW_STEP must be a non-negative integer!"
-assert params.DMR_MIN_C instanceof Integer && params.DMR_MIN_C >= 0, "DMR_MIN_C must be a non-negative integer!"
-assert params.DMR_MIN_COV instanceof Integer && params.DMR_MIN_COV >= 0, "DMR_MIN_COV must be a non-negative integer!"
-assert params.MR_BATCH_SIZE instanceof Integer && params.MR_BATCH_SIZE >= 0, "MR_BATCH_SIZE must be a non-negative integer!"
-assert params.HDMR_FOLD_CHANGE >= 0, "HDMR_FOLD_CHANGE must be a non-negative number!"
-assert params.FDR_CUTOFF > 0 && params.FDR_CUTOFF < 1, "FDR_CUTOFF must be between 0 and 1!"
-
-assert params.MIN_QUAL instanceof Integer && params.MIN_QUAL in 1..40, "MIN_QUAL must be between 1 and 40!"
-assert params.IGNORE_FIRST_BP instanceof Integer && params.IGNORE_FIRST_BP >= 0, "IGNORE_FIRST_BP must be a non-negative integer!"
-assert params.IGNORE_LAST_BP instanceof Integer && params.IGNORE_LAST_BP >= 0, "IGNORE_LAST_BP must be a non-negative integer!"
-
-assert params.MIN_COVERAGE instanceof Integer && params.MIN_COVERAGE > 0, "MIN_COVERAGE must be a non-negative integer!"
-assert params.DESERT_SIZE instanceof Integer && params.DESERT_SIZE > 0, "DESERT_SIZE must be a non-negative integer!"
-assert params.MERGE_DIST instanceof Integer && params.MERGE_DIST > 0, "MERGE_DIST must be a non-negative integer!"
-assert params.MR_MIN_C instanceof Integer, "MR_MIN_C must be an integer! Negative value turns on permutation test."
-assert params.TRIM_METHRATE in 0..100, "TRIM_METHRATE must be between 0 and 100!"
-
-
-log.info "=================================================="
-log.info " MethylScore ${version}"
-log.info "=================================================="
-log.info "Reference genome      : ${params.GENOME}"
-log.info "Current home          : $HOME"
-log.info "Current user          : $USER"
-log.info "Current path          : $PWD"
-log.info "Script dir            : $baseDir"
-log.info "Working dir           : $workDir"
-log.info "Output dir            : ${params.PROJECT_FOLDER}"
-log.info "---------------------------------------------------"
-log.info "IGV output            : ${params.IGV}"
-log.info "---------------------------------------------------"
-log.info "CLUSTER_MIN_METH      : ${params.CLUSTER_MIN_METH}"
-log.info "CLUSTER_MIN_METH_DIFF : ${params.CLUSTER_MIN_METH_DIFF}"
-log.info "DESERT_SIZE           : ${params.DESERT_SIZE}"
-log.info "DMR_MIN_C             : ${params.DMR_MIN_C}"
-log.info "DMR_MIN_COV           : ${params.DMR_MIN_COV}"
-log.info "DO_DEDUP              : ${params.DO_DEDUP}"
-log.info "FDR_CUTOFF            : ${params.FDR_CUTOFF}"
-log.info "HDMR_FOLD_CHANGE      : ${params.HDMR_FOLD_CHANGE}"
-log.info "HUMAN                 : ${params.HUMAN}"
-log.info "IGNORE_FIRST_BP       : ${params.IGNORE_FIRST_BP}"
-log.info "IGNORE_LAST_BP        : ${params.IGNORE_LAST_BP}"
-log.info "MERGE_DIST            : ${params.MERGE_DIST}"
-log.info "MIN_COVERAGE          : ${params.MIN_COVERAGE}"
-log.info "MIN_QUAL              : ${params.MIN_QUAL}"
-log.info "MR_BATCH_SIZE         : ${params.MR_BATCH_SIZE}"
-log.info "MR_FREQ_CHANGE        : ${params.MR_FREQ_CHANGE}"
-log.info "MR_FREQ_DISTANCE      : ${params.MR_FREQ_DISTANCE}"
-log.info "MR_MIN_C              : ${params.MR_MIN_C}"
-log.info "ROI                   : ${params.ROI}"
-log.info "MR_PARAMS             : ${params.MR_PARAMS}"
-log.info "SAMPLE_SHEET          : ${params.SAMPLE_SHEET}"
-log.info "SLIDING_WINDOW_SIZE   : ${params.SLIDING_WINDOW_SIZE}"
-log.info "SLIDING_WINDOW_STEP   : ${params.SLIDING_WINDOW_STEP}"
-log.info "STATISTICS            : ${params.STATISTICS}"
-log.info "TRIM_METHRATE         : ${params.TRIM_METHRATE}"
-log.info "---------------------------------------------------"
-log.info "Config Profile : ${workflow.profile}"
-log.info "=================================================="
+log.info"""
+====================================================================================================================================
+███╗   ███╗███████╗████████╗██╗  ██╗██╗   ██╗██╗     ███████╗ ██████╗ ██████╗ ██████╗ ███████╗
+████╗ ████║██╔════╝╚══██╔══╝██║  ██║╚██╗ ██╔╝██║     ██╔════╝██╔════╝██╔═══██╗██╔══██╗██╔════╝
+██╔████╔██║█████╗     ██║   ███████║ ╚████╔╝ ██║     ███████╗██║     ██║   ██║██████╔╝█████╗  
+██║╚██╔╝██║██╔══╝     ██║   ██╔══██║  ╚██╔╝  ██║     ╚════██║██║     ██║   ██║██╔══██╗██╔══╝  
+██║ ╚═╝ ██║███████╗   ██║   ██║  ██║   ██║   ███████╗███████║╚██████╗╚██████╔╝██║  ██║███████╗
+╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝v${workflow.manifest.version}
+====================================================================================================================================
+Reference genome      : ${params.GENOME}
+Current home          : $HOME
+Current user          : $USER
+Current path          : $PWD
+Script dir            : $baseDir
+Working dir           : $workDir
+Output dir            : ${params.PROJECT_FOLDER}
+------------------------------------------------------------------------------------------------------------------------------------
+SAMPLE_SHEET          : ${params.SAMPLE_SHEET}
+------------------------------------------------------------------------------------------------------------------------------------
+DO_DEDUP              : ${params.DO_DEDUP}
+HUMAN                 : ${params.HUMAN}
+IGV OUTPUT            : ${params.IGV}
+ROI                   : ${params.ROI}
+MR_PARAMS             : ${params.MR_PARAMS}
+STATISTICS            : ${params.STATISTICS}
+------------------------------------------------------------------------------------------------------------------------------------
+CLUSTER_MIN_METH      : ${params.CLUSTER_MIN_METH}
+CLUSTER_MIN_METH_DIFF : ${params.CLUSTER_MIN_METH_DIFF}
+DESERT_SIZE           : ${params.DESERT_SIZE}
+DMR_MIN_C             : ${params.DMR_MIN_C}
+DMR_MIN_COV           : ${params.DMR_MIN_COV}
+FDR_CUTOFF            : ${params.FDR_CUTOFF}
+HDMR_FOLD_CHANGE      : ${params.HDMR_FOLD_CHANGE}
+IGNORE_FIRST_BP       : ${params.IGNORE_FIRST_BP}
+IGNORE_LAST_BP        : ${params.IGNORE_LAST_BP}
+MERGE_DIST            : ${params.MERGE_DIST}
+MIN_COVERAGE          : ${params.MIN_COVERAGE}
+MIN_QUAL              : ${params.MIN_QUAL}
+MR_BATCH_SIZE         : ${params.MR_BATCH_SIZE}
+MR_FREQ_CHANGE        : ${params.MR_FREQ_CHANGE}
+MR_FREQ_DISTANCE      : ${params.MR_FREQ_DISTANCE}
+MR_MIN_C              : ${params.MR_MIN_C}
+SLIDING_WINDOW_SIZE   : ${params.SLIDING_WINDOW_SIZE}
+SLIDING_WINDOW_STEP   : ${params.SLIDING_WINDOW_STEP}
+TRIM_METHRATE         : ${params.TRIM_METHRATE}
+------------------------------------------------------------------------------------------------------------------------------------
+Config Profile : ${workflow.profile}
+====================================================================================================================================
+""".stripIndent()
 
 roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
 
@@ -565,10 +496,10 @@ process MethylScore_mergeDMRs {
 }
 
 workflow.onComplete {
-    println()
+ 
     if ( workflow.success ) {
-     println "[$workflow.complete] >> MethylScore finished SUCCESSFULLY after $workflow.duration and found ${DMRs.getVal().countLines()} DMRs"
+      log.info "[$workflow.complete] >> MethylScore finished SUCCESSFULLY after $workflow.duration and found ${DMRs.getVal().countLines()} DMRs"
     } else {
-     println "[$workflow.complete] >> MethylScore finished with ERRORS after $workflow.duration"
+      log.info "[$workflow.complete] >> MethylScore finished with ERRORS after $workflow.duration"
     }
 }
