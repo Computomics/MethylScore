@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/Gregor-Mendel-Institute/MethylScore-nf.svg?token=RozNRzpisdeKpeAjRY7S&branch=master)](https://travis-ci.com/Gregor-Mendel-Institute/MethylScore-nf)
+
 # MethylScore-nf
 A nextflow implementation of Computomics' MethylScore pipeline
 
