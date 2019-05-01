@@ -77,9 +77,7 @@ hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfE
 Channel
  .fromPath(params.GENOME, checkIfExists: true)
  .splitFasta( record: [id: true, text: true] )
- .set { fasta }
-
-(fasta_MethylExtract, fasta_bedGraph) = !params.BEDGRAPH ? [ fasta, Channel.empty() ] : [ Channel.empty(), fasta ]
+ .into { fasta_splitting; fasta_merging }
 
 /*
  * Create a Channel for the tsv file containing samples
@@ -235,7 +233,7 @@ process MethylScore_splitBams {
 
     input:
     set val(sampleID), val(seqType), file(bamFile) from dedup
-    each chromosome from fasta_MethylExtract
+    each chromosome from fasta_splitting
 
     output:
     set val(sampleID), val(seqType), file('*bam'), val("${chromosome.id}"), val("${chromosome.text}") into chrSplit
@@ -246,20 +244,21 @@ process MethylScore_splitBams {
     script:
     """
     samtools index ${bamFile}
-    samtools view -b ${bamFile} ${chromosome.id} > ${bamFile.baseName}_${chromosome.id}.bam
+    samtools view -b ${bamFile} ${chromosome.id} > ${chromosome.id}.bam
     """
 }
 
 process MethylScore_callConsensus {
-    tag "$sampleID:$chromosomeID"
+    afterScript "mv ${context}.output ${sampleID}.${chromosomeID}.${context}.output"
+    tag "$sampleID:$chromosomeID:$context"
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
     input:
     set val(sampleID), val(seqType), file(splitBam), val(chromosomeID), file("${chromosomeID}.fa") from chrSplit
-//    each context from (['CG','CHG','CHH']) // TODO: check whether parallelizing could be beneficial for performance here
+    each context from (['CG','CHG','CHH'])
 
     output:
-    set val(sampleID), file("${sampleID}.allC.output"), val(chromosomeID), val("${chromosomeID}.fa") into consensus
+    set val(sampleID), file("${sampleID}.${chromosomeID}.${context}.output") into consensus
 
     when:
     !params.BEDGRAPH
@@ -277,22 +276,16 @@ process MethylScore_callConsensus {
      varFraction=0.01 \\
      maxPval=0.01 \\
      p=1 \\
+     chromSplitted=Y \\
      chromDiv=100 \\
      memNumReads=1000 \\
      FirstIgnor=${params.IGNORE_FIRST_BP} \\
      LastIgnor=${params.IGNORE_LAST_BP} \\
      minDepthMeth=1 \\
-     context=ALL \\
+     context=${context} \\
      bedOut=N \\
      wigOut=N \\
-     ${flagW} || true
-
-    for context in CG CHG CHH; do
-     sort -k1,1 -k2,2n \$context.output |
-     awk -vi=\$context -vs=$sampleID '\$0!~/^#/{OFS="\\t"; \$1=s "\\t" \$1; \$3=i "." \$3; print \$0}' > ${sampleID}.${chromosomeID}.\$context.output.tmp;
-    done
-    
-    sort -m -k2,2 -k3,3n *.output.tmp > ${sampleID}.allC.output
+     ${flagW}
     """
 }
 
@@ -301,23 +294,30 @@ process MethylScore_mergeContexts {
     publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy'
 
     input:
-    set val(sampleID), file(bedGraph) from samples_bedGraph.groupTuple()
-    each chromosome from fasta_bedGraph
+    set val(sampleID), file(consensus) from consensus.mix(samples_bedGraph).groupTuple()
+    each chromosome from fasta_merging
 
     output:
-    set val(sampleID), file("${sampleID}.merged.bedGraph"), val("${chromosome.id}"), val("${chromosome.text}") into mergedContexts
-
-    when:
-    params.BEDGRAPH
+    set val(sampleID), file('*.allC'), val("${chromosome.id}"), val("${chromosome.text}") into mergedContexts
 
     script:
-    """
-    awk '\$1 == "${chromosome.id}"' ${bedGraph} | sort -k1,1d -k2,2g -T . > ${sampleID}.merged.bedGraph
-    """
+    if ( !params.BEDGRAPH )
+      """
+      for context in CG CHG CHH; do
+        sort -k1,1 -k2,2n ${sampleID}.${chromosome.id}.\$context.output |
+        awk -vi=\$context -vs=$sampleID '\$0!~/^#/{OFS="\\t"; \$1=s "\\t" \$1; \$3=i "." \$3; print \$0}' > ${sampleID}.${chromosome.id}.\$context.output.tmp;
+      done
+
+      sort -m -k2,2 -k3,3n *.output.tmp > ${sampleID}.allC
+      """
+    else
+      """
+      awk '\$1 == "${chromosome.id}"' ${consensus} | sort -k1,1d -k2,2g -T . > ${sampleID}.allC
+      """
 }
 
 indexedSamples
- .combine(consensus.mix(mergedContexts), by: 0)
+ .combine(mergedContexts, by: 0)
  .groupTuple(by: [3,4])
  .set {pile}
 
