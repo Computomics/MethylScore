@@ -496,12 +496,3 @@ process MethylScore_mergeDMRs {
     sort -k1,1V -k2 -o all_context_DMRs.bed all_context_DMRs.bed
     """
 }
-
-workflow.onComplete {
- 
-    if ( workflow.success ) {
-      log.info "[$workflow.complete] >> MethylScore finished SUCCESSFULLY after $workflow.duration and found ${DMRs.getVal().countLines()} DMRs"
-    } else {
-      log.info "[$workflow.complete] >> MethylScore finished with ERRORS after $workflow.duration"
-    }
-}
