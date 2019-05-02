@@ -197,6 +197,29 @@ if( params.DO_DEDUP ) {
 
 }
 
+process MethylScore_readStatistics {
+    tag "$sampleID"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(bamFile) from read_stats
+    file(ROIs) from roi_file
+
+    output:
+    file ('*') into stats
+
+    when:
+    params.STATISTICS && !params.BEDGRAPH
+
+    script:
+    def REGIONS_FILE = ROIs.name != 'null' ? "${ROIs}" : ""
+
+    """
+    read_stats.sh ${sampleID} ${bamFile} ${REGIONS_FILE}
+    cov_stats.sh ${sampleID} ${bamFile} ${REGIONS_FILE}
+    """
+}
+
 process MethylScore_splitBams {
     tag "$sampleID:$chromosome.id"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${chromosome.id}", mode: 'copy'
@@ -326,8 +349,9 @@ process MethylScore_callMRs {
     file(parameters) from hmm_params_file
 
     output:
-    file("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_stats, MRs_splitting)
+    file("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_splitting)
     file("${sample.getAt(0)}.hmm_params") optional true into hmm_params
+    file("${sample.getAt(0)}.MR_stats.tsv") into MR_stats
 
     script:
     def HUMAN = params.HUMAN ? "-human" : ""
@@ -348,33 +372,8 @@ process MethylScore_callMRs {
      ${MIN_C} \\
      ${matrixWG} \\
      ${HMM_PARAMETERS}
-    """
-}
 
-process MethylScore_Statistics {
-    tag "$sampleID"
-    publishDir "${params.PROJECT_FOLDER}/Statistics/${sampleID}", mode: 'copy'
-
-    input:
-    set val(sampleID), val(seqType), file(bamFile) from read_stats
-    file(MRs) from MRs_stats
-    file(ROIs) from roi_file
-
-    output:
-    file ('*') into stats
-
-    when:
-    params.STATISTICS && !params.BEDGRAPH
-
-    script:
-    def REGIONS_FILE = ROIs.name != 'null' ? "${ROIs}" : ""
-
-    """
-    read_stats.sh ${sampleID} ${bamFile} ${REGIONS_FILE}
-
-    cov_stats.sh ${sampleID} ${bamFile} ${REGIONS_FILE}
-
-    MR_stats.sh ${sampleID} ${MRs}
+    MR_stats.sh ${sample.getAt(0)} ${sample.getAt(0)}.MRs.bed
     """
 }
 
