@@ -12,6 +12,9 @@ install:
   - mkdir /tmp/nextflow && cd /tmp/nextflow
   - wget -qO- get.nextflow.io | bash
   - sudo ln -s /tmp/nextflow/nextflow /usr/local/bin/nextflow
+env:
+  - SAMPLES="--SAMPLE_SHEET 'https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/samplesheet.tsv'"
+  - SAMPLES="--SAMPLE_SHEET 'https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/samplesheet_bedGraph.tsv' --BEDGRAPH"
 
 script:
-  - nextflow run ${TRAVIS_BUILD_DIR} -profile testing,docker
+  - nextflow run ${TRAVIS_BUILD_DIR} ${SAMPLES} -profile testing,docker
