@@ -249,7 +249,7 @@ process MethylScore_splitBams {
 }
 
 process MethylScore_callConsensus {
-    afterScript "mv ${context}.output ${sampleID}.${chromosomeID}.${context}.output"
+    afterScript "awk -vi=${context} -vs=${sampleID} 'NR>1{OFS=\"\\t\"; \$1=s \"\\t\" \$1; \$3=i \".\" \$3; print \$0}' ${context}.output > ${chromosomeID}.${context}.output"
     tag "$sampleID:$chromosomeID:$context"
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
@@ -258,7 +258,7 @@ process MethylScore_callConsensus {
     each context from (['CG','CHG','CHH'])
 
     output:
-    set val(sampleID), file("${sampleID}.${chromosomeID}.${context}.output") into consensus
+    set val(sampleID), file("${chromosomeID}.${context}.output") into consensus
 
     when:
     !params.BEDGRAPH
@@ -303,16 +303,11 @@ process MethylScore_mergeContexts {
     script:
     if ( !params.BEDGRAPH )
       """
-      for context in CG CHG CHH; do
-        sort -k1,1 -k2,2n ${sampleID}.${chromosome.id}.\$context.output |
-        awk -vi=\$context -vs=$sampleID '\$0!~/^#/{OFS="\\t"; \$1=s "\\t" \$1; \$3=i "." \$3; print \$0}' > ${sampleID}.${chromosome.id}.\$context.output.tmp;
-      done
-
-      sort -m -k2,2 -k3,3n *.output.tmp > ${sampleID}.allC
+      cat ${chromosome.id}*.output | sort -k3,3n > ${sampleID}.${chromosome.id}.allC
       """
     else
       """
-      awk '\$1 == "${chromosome.id}"' ${consensus} | sort -k1,1d -k2,2g -T . > ${sampleID}.allC
+      awk '\$1 == "${chromosome.id}"' ${consensus} | sort -k1,1d -k2,2g > ${sampleID}.${chromosome.id}.allC
       """
 }
 
