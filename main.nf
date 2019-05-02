@@ -353,7 +353,7 @@ process MethylScore_callMRs {
 
 process MethylScore_Statistics {
     tag "$sampleID"
-    publishDir "${params.PROJECT_FOLDER}/Statistics", mode: 'copy'
+    publishDir "${params.PROJECT_FOLDER}/Statistics/${sampleID}", mode: 'copy'
 
     input:
     set val(sampleID), val(seqType), file(bamFile) from read_stats
@@ -367,7 +367,7 @@ process MethylScore_Statistics {
     params.STATISTICS && !params.BEDGRAPH
 
     script:
-    def REGIONS_FILE = ROIs.name != 'null' ? "${bed}" : ""
+    def REGIONS_FILE = ROIs.name != 'null' ? "${ROIs}" : ""
 
     """
     read_stats.sh ${sampleID} ${bamFile} ${REGIONS_FILE}
