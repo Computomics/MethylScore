@@ -477,7 +477,7 @@ process MethylScore_mergeDMRs {
      ${params.DMR_MIN_C} \\
      ${params.HDMR_FOLD_CHANGE}
 
-    sort -k1,1V -k2 -o DMRs.bed DMRs.bed
-    sort -k1,1V -k2 -o all_context_DMRs.bed all_context_DMRs.bed
+    sort -k1,1V -k2,2n -o DMRs.bed DMRs.bed
+    sort -k1,1V -k2,2n -o all_context_DMRs.bed all_context_DMRs.bed
     """
 }
