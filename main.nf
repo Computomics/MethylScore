@@ -170,7 +170,7 @@ if( params.DO_DEDUP ) {
     set val(sampleID), val(seqType), file(bamFile) from mergedSamples
 
     output:
-    set val(sampleID), val(seqType), file('*passQC.dedup.bam') into (dedup, stats)
+    set val(sampleID), val(seqType), file('*passQC.dedup.bam') into (dedup, read_stats)
     file ('dedup.metrics.txt')
 
     when:
@@ -193,38 +193,8 @@ if( params.DO_DEDUP ) {
 
 } else {
 
-(dedup, stats) = mergedSamples.into(2)
+(dedup, read_stats) = mergedSamples.into(2)
 
-}
-
-process MethylScore_readStatistics {
-    tag "$sampleID"
-    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
-
-    input:
-    set val(sampleID), val(seqType), file(bamFile) from stats
-    file(bed) from roi_file
-
-    output:
-    file ('*') into readStats
-
-    when:
-    params.STATISTICS && !params.BEDGRAPH
-   
-    script:
-    def REGIONS_FILE = bed.name != 'null' ? "${bed}" : ""
-
-    """
-    read_stats.sh \\
-     ${sampleID} \\
-     ${bamFile} \\
-     ${REGIONS_FILE}
-
-    cov_stats.sh \\
-     ${sampleID} \\
-     ${bamFile} \\
-     ${REGIONS_FILE}
-    """
 }
 
 process MethylScore_splitBams {
@@ -356,9 +326,8 @@ process MethylScore_callMRs {
     file(parameters) from hmm_params_file
 
     output:
-    file("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_splitting)
+    file("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_stats, MRs_splitting)
     file("${sample.getAt(0)}.hmm_params") optional true into hmm_params
-    file("${sample.getAt(0)}.MR_stats.tsv") into MRstats
 
     script:
     def HUMAN = params.HUMAN ? "-human" : ""
@@ -379,11 +348,33 @@ process MethylScore_callMRs {
      ${MIN_C} \\
      ${matrixWG} \\
      ${HMM_PARAMETERS}
+    """
+}
 
-     echo -e "${sample.getAt(0)}\t" \\
-        \$(cat ${sample.getAt(0)}.MRs.bed | wc -l)"\t" \\
-        \$(awk -v OFS=\"\t\" '{sum+=\$3-\$2+1}END{print sum, sprintf("%.0f", sum/NR)}' ${sample.getAt(0)}.MRs.bed) \\
-        > ${sample.getAt(0)}.MR_stats.tsv
+process MethylScore_Statistics {
+    tag "$sampleID"
+    publishDir "${params.PROJECT_FOLDER}/Statistics", mode: 'copy'
+
+    input:
+    set val(sampleID), val(seqType), file(bamFile) from read_stats
+    file(MRs) from MRs_stats
+    file(ROIs) from roi_file
+
+    output:
+    file ('*') into stats
+
+    when:
+    params.STATISTICS && !params.BEDGRAPH
+
+    script:
+    def REGIONS_FILE = ROIs.name != 'null' ? "${bed}" : ""
+
+    """
+    read_stats.sh ${sampleID} ${bamFile} ${REGIONS_FILE}
+
+    cov_stats.sh ${sampleID} ${bamFile} ${REGIONS_FILE}
+
+    MR_stats.sh ${sampleID} ${MRs}
     """
 }
 
