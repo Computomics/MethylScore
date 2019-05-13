@@ -12,3 +12,4 @@ dependencies:
   - scipy=1.2.1
   - perl=5.26.2
   - methylextract=1.9.1
+  - MethylDackel=0.4.0

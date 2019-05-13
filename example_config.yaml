@@ -11,13 +11,13 @@ BEDGRAPH : false
 IGV : true
 
 # Reference genome in fasta format (absolute path)
-GENOME : "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
+GENOME : false 
 
 # project folder (absolute path)
 PROJECT_FOLDER : "./results"
 
 # sample sheet file (absolute path)
-SAMPLE_SHEET : "./samplesheet.tsv"
+SAMPLE_SHEET : false 
 
 # regions of interest in bed file format (absolute path)
 ROI : false
