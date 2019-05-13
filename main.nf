@@ -89,7 +89,7 @@ Channel
   .splitText()
   .map{ line ->
         def list = line.split()
-        [ 'sampleID':list[0], 'filePath':file(list[2]) ]
+        [ 'sampleID':list[0], 'filePath':file(list[-1]) ]
       }
   .set { inputMap }
 
