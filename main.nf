@@ -210,7 +210,7 @@ process MethylScore_splitBams {
     each file(fasta) from fasta_split
 
     output:
-    set val(sampleID), file("${sampleID}.${chromosomeID}.{bam,bedGraph}"), val(chromosomeID) into chrSplit
+    set val(sampleID), file("${sampleID}.${chromosomeID}.{bam,allC}"), val(chromosomeID) into chrSplit
 
     script:
     chromosomeID = fasta.baseName
