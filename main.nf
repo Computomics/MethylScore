@@ -214,7 +214,7 @@ process MethylScore_splitBams {
     output:
     set val(sampleID), file("${sampleID}.${chromosomeID}.{bam,allC}"), val(chromosomeID) into chrSplit
     set val(sampleID), stdout, val(chromosomeID) optional true into mbias
-    file('*.svg') into mbias_plots
+    file('*.svg') optional true into mbias_plots
 
     script:
     chromosomeID = fasta.baseName
@@ -239,12 +239,14 @@ process MethylScore_splitBams {
       """
 }
 
+(bamSplit, bedSplit) = !params.BEDGRAPH ? [ chrSplit, Channel.empty() ] : [ Channel.empty(), chrSplit ]
+
 process MethylScore_callConsensus {
     tag "$sampleID:$chromosomeID"
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(chromosomeID), file(splitBam), val(mbias) from chrSplit.combine(mbias, by:[0,2])
+    set val(sampleID), val(chromosomeID), file(splitBam), val(mbias) from bamSplit.combine(mbias, by:[0,2])
     file(fasta) from fasta_consensus.collect()
 
     output:
@@ -272,7 +274,7 @@ process MethylScore_callConsensus {
     """
 }
 
-consensus = !params.BEDGRAPH ? allC : chrSplit
+consensus = !params.BEDGRAPH ? allC : bedSplit
 
 indexedSamples
  .combine(consensus, by: 0)
