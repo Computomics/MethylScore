@@ -14,14 +14,16 @@
 // validate parameters
 ParameterChecks.checkParams(params)
 
-log.info"""
-====================================================================================================================================
+log.info """
+===================================================================================================================================
+
 ███╗   ███╗███████╗████████╗██╗  ██╗██╗   ██╗██╗     ███████╗ ██████╗ ██████╗ ██████╗ ███████╗
 ████╗ ████║██╔════╝╚══██╔══╝██║  ██║╚██╗ ██╔╝██║     ██╔════╝██╔════╝██╔═══██╗██╔══██╗██╔════╝
 ██╔████╔██║█████╗     ██║   ███████║ ╚████╔╝ ██║     ███████╗██║     ██║   ██║██████╔╝█████╗  
 ██║╚██╔╝██║██╔══╝     ██║   ██╔══██║  ╚██╔╝  ██║     ╚════██║██║     ██║   ██║██╔══██╗██╔══╝  
 ██║ ╚═╝ ██║███████╗   ██║   ██║  ██║   ██║   ███████╗███████║╚██████╗╚██████╔╝██║  ██║███████╗
 ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝v${workflow.manifest.version}
+
 ====================================================================================================================================
 Reference genome          : ${params.GENOME}
 Current home              : $HOME
@@ -55,8 +57,8 @@ DMR_MIN_C                 : ${params.DMR_MIN_C}
 DMR_MIN_COV               : ${params.DMR_MIN_COV}
 FDR_CUTOFF                : ${params.FDR_CUTOFF}
 HDMR_FOLD_CHANGE          : ${params.HDMR_FOLD_CHANGE}
-IGNORE_FIRST_BP           : ${params.IGNORE_FIRST_BP}
-IGNORE_LAST_BP            : ${params.IGNORE_LAST_BP}
+IGNORE_OT                 : ${params.AUTOTRIM ? 'auto' : params.IGNORE_OT}
+IGNORE_OB                 : ${params.AUTOTRIM ? 'auto' : params.IGNORE_OB}
 MERGE_DIST                : ${params.MERGE_DIST}
 MIN_COVERAGE              : ${params.MIN_COVERAGE}
 MIN_QUAL                  : ${params.MIN_QUAL}
@@ -72,8 +74,11 @@ Config Profile : ${workflow.profile}
 ====================================================================================================================================
 """.stripIndent()
 
-roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
+if( params.AUTOTRIM ){
+log.warn "MethylScore is running in AUTOTRIM mode. Please review mbias plots in ${params.PROJECT_FOLDER}/01mappings/mbias and adjust IGNORE_OT and IGNORE_OB settings if necessary"
+}
 
+roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
 hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfExists: true).collect() : file('null')
 
 /*
@@ -83,9 +88,8 @@ hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfE
 Channel
  .fromPath(params.GENOME, checkIfExists: true)
  .splitFasta( record: [id: true, text: true] )
- .set { fasta }
-
-(fasta_MethylExtract, fasta_bedGraph) = !params.BEDGRAPH ? [ fasta, Channel.empty() ] : [ Channel.empty(), fasta ]
+ .collectFile(storeDir: "${workDir}/fasta") { fasta -> ["${fasta.id}.fa", fasta.text] }
+ .into { fasta_split; fasta_consensus; fasta_matrix }
 
 /*
  * Create a Channel for the tsv file containing samples
@@ -97,15 +101,15 @@ Channel
   .splitText()
   .map{ line ->
         def list = line.split()
-        !params.BEDGRAPH ? [ 'sampleID':list[0], 'seqType':list[1], 'filePath':file(list[2]) ] : [ 'sampleID':list[0], 'filePath':file(list[1]) ]
+        [ 'sampleID':list[0], 'filePath':file(list[-1]) ]
       }
   .set { inputMap }
 
 def sampleIndex = 1
 inputMap
-  .map { record -> !params.BEDGRAPH ? [ record.sampleID, record.seqType, record.filePath ] : [ record.sampleID, record.filePath ] }
-  .tap { samples }
+  .map { record -> [ record.sampleID, record.filePath ] }
   .groupTuple()
+  .tap { samples }
   .map { record -> tuple( record[0], sampleIndex++ ) }
   .set{ indexedSamples }
 
@@ -115,38 +119,15 @@ inputMap
  * Start pipeline
  */
 
-process MethylScore_filterQC {
-    tag "$bamFile"
-    publishDir "${params.PROJECT_FOLDER}/01mappings", mode: 'copy'
-
-    input:
-    set val(sampleID), val(seqType), file(bamFile) from samples_bam
-
-    output:
-    set val(sampleID), val(seqType), file('*passQC.bam') into passQC
- 
-    when:
-    !params.BEDGRAPH
-
-    script:
-    """
-    if [[ \$(samtools view -H ${bamFile} | grep unsorted) ]]; then
-     samtools sort ${bamFile} | samtools view -bh -F 0x200 -F 0x4 -o ${bamFile.baseName}.passQC.bam
-    else
-     samtools view -bh -F 0x200 -F 0x4 -o ${bamFile.baseName}.passQC.bam ${bamFile}
-    fi
-    """
-}
-
 process MethylScore_mergeReplicates {
     tag "$sampleID: ${bamFile.collect().size()} replicate(s)"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(seqType), file(bamFile) from passQC.groupTuple()
+    set val(sampleID), file(bamFile) from samples_bam
 
     output:
-    set val(sampleID), val(seqType), file('*merged.passQC.bam') into mergedSamples
+    set val(sampleID), file('*.bam') into mergedSamples
 
     when:
     !params.BEDGRAPH
@@ -154,16 +135,19 @@ process MethylScore_mergeReplicates {
     script:
     if( bamFile.toList().size() != 1 )
        """
-       mkdir tmp
-       picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -Djava.io.tmpdir=tmp -XX:ParallelGCThreads=1 \\
+       picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -Djava.io.tmpdir='.' -XX:ParallelGCThreads=1 \\
         MergeSamFiles \\
         I=${bamFile.join(' I=')} \\
-        O=${sampleID}.merged.passQC.bam \\
+        O=${sampleID}.merged.sorted.bam \\
         USE_THREADING=false
        """
     else
        """
-       mv ${bamFile} ${sampleID}.merged.passQC.bam
+       if [[ \$(samtools view -H ${bamFile} | grep unsorted) ]]; then
+         samtools sort -o ${sampleID}.sorted.bam ${bamFile};
+       else
+         mv ${bamFile} ${sampleID}.sorted.bam;
+       fi
        """
 }
 
@@ -174,10 +158,10 @@ if( params.DO_DEDUP ) {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(seqType), file(bamFile) from mergedSamples
+    set val(sampleID), file(bamFile) from mergedSamples
 
     output:
-    set val(sampleID), val(seqType), file('*passQC.dedup.bam') into (dedup, stats)
+    set val(sampleID), file('*dedup.bam') into (dedup, read_stats)
     file ('dedup.metrics.txt')
 
     when:
@@ -185,11 +169,10 @@ if( params.DO_DEDUP ) {
 
     script:
     """
-    mkdir tmp
-    picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -Djava.io.tmpdir=tmp -XX:ParallelGCThreads=1 \\
+    picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -Djava.io.tmpdir='.' -XX:ParallelGCThreads=1 \\
       MarkDuplicates \\
         I=${bamFile} \\
-        O=${sampleID}.passQC.dedup.bam \\
+        O=${sampleID}.dedup.bam \\
         METRICS_FILE=dedup.metrics.txt \\
         REMOVE_DUPLICATES=true \\
         MAX_FILE_HANDLES=1 \\
@@ -200,7 +183,7 @@ if( params.DO_DEDUP ) {
 
 } else {
 
-(dedup, stats) = mergedSamples.into(2)
+(dedup, read_stats) = mergedSamples.into(2)
 
 }
 
@@ -209,121 +192,101 @@ process MethylScore_readStatistics {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(seqType), file(bamFile) from stats
-    file(bed) from roi_file
+    set val(sampleID), file(bamFile) from read_stats
+    file(ROIs) from roi_file
 
     output:
-    file ('*') into readStats
+    file ('*') into stats
 
     when:
     params.STATISTICS && !params.BEDGRAPH
-   
+
     script:
-    def REGIONS_FILE = bed.name != 'null' ? "${bed}" : ""
+    def REGIONS_FILE = ROIs.name != 'null' ? "${ROIs}" : ""
 
     """
-    read_stats.sh \\
-     ${sampleID} \\
-     ${bamFile} \\
-     ${REGIONS_FILE}
-
-    cov_stats.sh \\
-     ${sampleID} \\
-     ${bamFile} \\
-     ${REGIONS_FILE}
+    read_stats.sh ${sampleID} ${bamFile} ${REGIONS_FILE}
+    cov_stats.sh ${sampleID} ${bamFile} ${REGIONS_FILE}
     """
 }
 
 process MethylScore_splitBams {
-    tag "$sampleID:$chromosome.id"
-    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${chromosome.id}", mode: 'copy'
+    tag "$sampleID:$chromosomeID"
+    publishDir "${params.PROJECT_FOLDER}/01mappings", mode: 'copy',
+       saveAs: {filename -> filename.endsWith(".svg") ? "mbias/$filename" : "${sampleID}/split/${chromosomeID}/${filename}"}
 
     input:
-    set val(sampleID), val(seqType), file(bamFile) from dedup
-    each chromosome from fasta_MethylExtract
+    set val(sampleID), file(bamFile) from dedup.mix(samples_bedGraph)
+    each file(fasta) from fasta_split
 
     output:
-    set val(sampleID), val(seqType), file('*bam'), val("${chromosome.id}"), val("${chromosome.text}") into chrSplit
-
-    when:
-    !params.BEDGRAPH
+    set val(sampleID), file("${sampleID}.${chromosomeID}.{bam,allC}"), val(chromosomeID) into chrSplit
+    set val(sampleID), stdout, val(chromosomeID) optional true into mbias
+    file('*.svg') optional true into mbias_plots
 
     script:
-    """
-    samtools index ${bamFile}
-    samtools view -b ${bamFile} ${chromosome.id} > ${bamFile.baseName}_${chromosome.id}.bam
-    """
+    chromosomeID = fasta.baseName
+
+    if (!params.BEDGRAPH)
+      """
+      samtools index ${bamFile}
+      cat <(samtools view -H ${bamFile} | grep -E '@HD|${chromosomeID}') \\
+          <(samtools view ${bamFile} ${chromosomeID}) | \\
+          samtools view -bo ${sampleID}.${chromosomeID}.bam -
+
+      MethylDackel mbias \\
+          --CHH \\
+          --CHG \\
+          ${chromosomeID}.fa \\
+          ${sampleID}.${chromosomeID}.bam \\
+          ${sampleID}.${chromosomeID} 2> >(tail -n1 | cut -d: -f2) > /dev/null
+      """
+    else
+      """
+      awk '\$1 == "${chromosomeID}"' ${bamFile} | sort -k2,2n > ${sampleID}.${chromosomeID}.allC
+      """
 }
+
+(bamSplit, bedSplit) = !params.BEDGRAPH ? [ chrSplit, Channel.empty() ] : [ Channel.empty(), chrSplit ]
 
 process MethylScore_callConsensus {
     tag "$sampleID:$chromosomeID"
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(seqType), file(splitBam), val(chromosomeID), file("${chromosomeID}.fa") from chrSplit
-//    each context from (['CG','CHG','CHH']) // TODO: check whether parallelizing could be beneficial for performance here
+    set val(sampleID), val(chromosomeID), file(splitBam), val(mbias) from bamSplit.combine(mbias, by:[0,2])
+    file(fasta) from fasta_consensus.collect()
 
     output:
-    set val(sampleID), file("${sampleID}.allC.output"), val(chromosomeID), val("${chromosomeID}.fa") into consensus
+    set val(sampleID), file('*.allC'), val(chromosomeID) into allC
 
     when:
     !params.BEDGRAPH
 
     script:
-    def flagW = ( seqType[0] == "PE" ? "flagW=99,147 flagC=83,163 peOverlap=Y" : "flagW=0 flagC=16" )
+    def trim = params.AUTOTRIM ? "${mbias.trim()}" : "--nOT ${params.IGNORE_OT} --nOB ${params.IGNORE_OB}" 
 
     """
-    MethylExtract.pl \\
-     seq='.' \\
-     inDir='.' \\
-     delDup=N \\
-     minQ=${params.MIN_QUAL} \\
-     methNonCpGs=0 \\
-     varFraction=0.01 \\
-     maxPval=0.01 \\
-     p=1 \\
-     chromDiv=100 \\
-     memNumReads=1000 \\
-     FirstIgnor=${params.IGNORE_FIRST_BP} \\
-     LastIgnor=${params.IGNORE_LAST_BP} \\
-     minDepthMeth=1 \\
-     context=ALL \\
-     bedOut=N \\
-     wigOut=N \\
-     ${flagW}
+    MethylDackel extract \\
+     --CHH \\
+     --CHG \\
+     ${trim} \\
+     -p ${params.MIN_QUAL} \\
+     --minOppositeDepth=1 \\
+     --maxVariantFrac=0.01 \\
+     --keepDupes \\
+     ${chromosomeID}.fa \\
+     ${splitBam}
 
-    for context in CG CHG CHH; do
-     sort -k1,1 -k2,2n \$context.output |
-     awk -vi=\$context -vs=$sampleID '\$0!~/^#/{OFS="\\t"; \$1=s "\\t" \$1; \$3=i "." \$3; print \$0}' > ${sampleID}.${chromosomeID}.\$context.output.tmp;
-    done
-    
-    sort -m -k2,2 -k3,3n *.output.tmp > ${sampleID}.allC.output
+    tail -n+2 -q *bedGraph | sort -k2,2n > ${sampleID}.${chromosomeID}.allC
     """
 }
 
-process MethylScore_mergeContexts {
-    tag "$sampleID"
-    publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy'
-
-    input:
-    set val(sampleID), file(bedGraph) from samples_bedGraph.groupTuple()
-    each chromosome from fasta_bedGraph
-
-    output:
-    set val(sampleID), file("${sampleID}.merged.bedGraph"), val("${chromosome.id}"), val("${chromosome.text}") into mergedContexts
-
-    when:
-    params.BEDGRAPH
-
-    script:
-    """
-    awk '\$1 == "${chromosome.id}"' ${bedGraph} | sort -k1,1d -k2,2g -T . > ${sampleID}.merged.bedGraph
-    """
-}
+consensus = !params.BEDGRAPH ? allC : bedSplit
 
 indexedSamples
- .combine(consensus.mix(mergedContexts), by: 0)
- .groupTuple(by: [3,4])
+ .combine(consensus, by: 0)
+ .groupTuple(by: 3)
  .set {pile}
 
 process MethylScore_chromosomalmatrix {
@@ -331,23 +294,23 @@ process MethylScore_chromosomalmatrix {
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    set val(sampleID), val(Index), file(consensus), val(chromosomeID), file("${chromosomeID}.fa") from pile
+    set val(sampleID), val(Index), file(consensus), val(chromosomeID) from pile
+    file(fasta) from fasta_matrix.collect()
 
     output:
     file("${chromosomeID}.genome_matrix.tsv") into splitMatrix
     set val(sampleID), val(Index) into (indexedSamples_splitting, indexedSamples_MRs) mode flatten
 
     script:
-    def inputFormat = params.BEDGRAPH ? "-i bismark -r ${chromosomeID}.fa": "-i mxX"
 
     """
     paste <(printf "${sampleID.join('\n')}") \\
           <(printf "${consensus.join('\n')}") \\
-          <(printf "${Index.join('\n')}") | sort -k 3 > ${chromosomeID}_samples.tsv
+          <(printf "${Index.join('\n')}") | sort -k 3,3n > ${chromosomeID}_samples.tsv
 
     generate_genome_matrix \\
      -s ${chromosomeID}_samples.tsv \\
-     ${inputFormat} \\
+     -i bismark -r ${chromosomeID}.fa \\
      -o ${chromosomeID}.genome_matrix.tsv
     """
 }
@@ -368,7 +331,7 @@ process MethylScore_callMRs {
     output:
     file("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_splitting)
     file("${sample.getAt(0)}.hmm_params") optional true into hmm_params
-    file("${sample.getAt(0)}.MR_stats.tsv") into MRstats
+    file("${sample.getAt(0)}.MR_stats.tsv") into MR_stats
 
     script:
     def HUMAN = params.HUMAN ? "-human" : ""
@@ -390,10 +353,7 @@ process MethylScore_callMRs {
      ${matrixWG} \\
      ${HMM_PARAMETERS}
 
-     echo -e "${sample.getAt(0)}\t" \\
-        \$(cat ${sample.getAt(0)}.MRs.bed | wc -l)"\t" \\
-        \$(awk -v OFS=\"\t\" '{sum+=\$3-\$2+1}END{print sum, sprintf("%.0f", sum/NR)}' ${sample.getAt(0)}.MRs.bed) \\
-        > ${sample.getAt(0)}.MR_stats.tsv
+    MR_stats.sh ${sample.getAt(0)} ${sample.getAt(0)}.MRs.bed
     """
 }
 
@@ -414,7 +374,7 @@ process MethylScore_igv {
     script:
     """
     sort -m -k1,1 -k2,2g -k3,3g ${bed} > MRs.merged.bed
-    python matrix2igv.py -i ${matrixWG} -m MRs.merged.bed -o methinfo.igv
+    python $baseDir/bin/matrix2igv.py -i ${matrixWG} -m MRs.merged.bed -o methinfo.igv
     """
 }
 
@@ -447,7 +407,7 @@ process MethylScore_callDMRs {
 
     output:
     file('*/*.bed') optional true into bedFiles
-    file('*/*.dif') optional true into segmentFiles
+    file('*/*.dif') into segmentFiles
 
     script:
     """
@@ -497,16 +457,7 @@ process MethylScore_mergeDMRs {
      ${params.DMR_MIN_C} \\
      ${params.HDMR_FOLD_CHANGE}
 
-    sort -k1,1V -k2 -o DMRs.bed DMRs.bed
-    sort -k1,1V -k2 -o all_context_DMRs.bed all_context_DMRs.bed
+    sort -k1,1V -k2,2n -o DMRs.bed DMRs.bed
+    sort -k1,1V -k2,2n -o all_context_DMRs.bed all_context_DMRs.bed
     """
-}
-
-workflow.onComplete {
- 
-    if ( workflow.success ) {
-      log.info "[$workflow.complete] >> MethylScore finished SUCCESSFULLY after $workflow.duration and found ${DMRs.getVal().countLines()} DMRs"
-    } else {
-      log.info "[$workflow.complete] >> MethylScore finished with ERRORS after $workflow.duration"
-    }
 }

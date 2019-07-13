@@ -11,13 +11,13 @@ BEDGRAPH : false
 IGV : true
 
 # Reference genome in fasta format (absolute path)
-GENOME : "/lustre/scratch/datasets/TAIR/9/fasta/TAIR9.fa"
+GENOME : false 
 
 # project folder (absolute path)
 PROJECT_FOLDER : "./results"
 
 # sample sheet file (absolute path)
-SAMPLE_SHEET : "./samplesheet.tsv"
+SAMPLE_SHEET : false 
 
 # regions of interest in bed file format (absolute path)
 ROI : false
@@ -46,7 +46,7 @@ MR_FREQ_DISTANCE : 30
 DMRS_PER_CONTEXT : 1
 
 # context-specific DMRs in these contexts will be determined:
-DMR_CONTEXTS : 'CG,CHG,CHH'
+DMR_CONTEXTS : CG,CHG,CHH
 
 # (only effective when DMRS_PER_CONTEXT=0):
 CLUSTER_MIN_METH : 20
@@ -110,8 +110,11 @@ MR_PARAMS : false
 # Minimum mapping quality of reads to consider (influenced by ploidy level!)
 MIN_QUAL : 30
 
-# Disregard first bases of each read for consensus calling
-IGNORE_FIRST_BP : 3
+# Disregard bases of original top strand for consensus calling (r1_start,r1_end,r2_start,r2_end)
+IGNORE_OT : 0,0,0,0
 
-# Disregard last bases of each read for consensus calling
-IGNORE_LAST_BP : 1
+# Disregard bases of original bottom strand for consensus calling (r1_start,r1_end,r2_start,r2_end)
+IGNORE_OB : 0,0,0,0
+
+# Infer read trimming from MethylDackel mbias output (will override IGNORE_OT and IGNORE_OB settings)
+AUTOTRIM : false
