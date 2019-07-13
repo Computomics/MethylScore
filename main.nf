@@ -43,7 +43,7 @@ MR_PARAMS                 : ${params.MR_PARAMS}
 STATISTICS                : ${params.STATISTICS}
 ------------------------------------------------------------------------------------------------------------------------------------
 DMRS_PER_CONTEXT          : ${params.DMRS_PER_CONTEXT}
-DMR_CONTEXTS              : ${params.DMRS_CONTEXTS}
+DMR_CONTEXTS              : ${params.DMR_CONTEXTS}
 CLUSTER_MIN_METH          : ${params.CLUSTER_MIN_METH}
 CLUSTER_MIN_METH_CG       : ${params.CLUSTER_MIN_METH_CG}
 CLUSTER_MIN_METH_CHG      : ${params.CLUSTER_MIN_METH_CHG}
@@ -80,6 +80,9 @@ log.warn "MethylScore is running in AUTOTRIM mode. Please review mbias plots in 
 
 roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
 hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfExists: true).collect() : file('null')
+
+// Create a channel for contexts to be analysed. Set to 'combined' if DMRS_PER_CONTEXT = false, because this is what dmrs-contexts expects
+DMRcontexts = params.DMRS_PER_CONTEXT ? Channel.from(params.DMR_CONTEXTS.tokenize(',')) : Channel.from('combined')
 
 /*
  * Create a channel for the reference genome and split it by chromosome
@@ -397,29 +400,34 @@ process MethylScore_splitMRs {
 }
 
 process MethylScore_callDMRs {
-    tag "$chunk"
+    tag "$context:$chunk"
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
     file(matrixWG) from matrixWG_DMRs
     file(samples) from samples_callDMRs
     each file(chunk) from MRchunks
+    each context from DMRcontexts
 
     output:
     file('*/*.bed') optional true into bedFiles
-    file('*/*.dif') into segmentFiles
+    set val(context), file('*/*.dif') optional true into segmentFiles
 
     script:
-    """
-    mkdir ${chunk}.out
+    def cluster_min_meth = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH : params."CLUSTER_MIN_METH_${context}"
+    def cluster_min_meth_diff = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH_DIFF : params."CLUSTER_MIN_METH_DIFF_${context}"
 
-    dmrs \\
+    """
+    mkdir ${chunk}.${context}.out
+
+    dmrs-contexts \\
+     -c ${context} \\
      -s ${samples} \\
      -r ${chunk} \\
      -m ${matrixWG} \\
      -p ${params.MR_FREQ_CHANGE} \\
-     -i ${params.CLUSTER_MIN_METH_DIFF} \\
-     -j ${params.CLUSTER_MIN_METH} \\
+     -i ${cluster_min_meth_diff} \\
+     -j ${cluster_min_meth} \\
      -v ${params.DMR_MIN_COV} \\
      -n ${params.DMR_MIN_C} \\
      -w ${params.SLIDING_WINDOW_SIZE} \\
@@ -428,36 +436,36 @@ process MethylScore_callDMRs {
      -B $baseDir/bin/betabin_model \\
      -Y $baseDir/bin/pv2qv.py \\
      --no-post-process \\
-     -o ${chunk}.out
+     -o ${chunk}.${context}.out
     """
 }
 
 process MethylScore_mergeDMRs {
-    tag "$segments"
+    tag "$context"
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
-    file(segments) from segmentFiles.collectFile(name:'segments.dif')
-    file(samples) from samples_mergeDMRs
+    set val(context), file('segments.*.dif') from segmentFiles.groupTuple()
+    file(samples) from samples_mergeDMRs.collect()
 
     output:
-    file('DMRs.bed') into DMRs
-    file('all_context_DMRs.bed') into all_context_DMRs
+    file('*.bed') into DMRs
 
     script:
+    def cluster_min_meth = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH : params."CLUSTER_MIN_METH_${context}"
+
     """
-    merge_DMRs \\
+    merge_DMRs-contexts \\
      ${samples} \\
-     ${segments} \\
+     <(cat segments.*.dif) \\
+     ${context} \\
      . \\
-     python \\
-     $baseDir/bin/pv2qv.py \\
      ${params.FDR_CUTOFF} \\
-     ${params.CLUSTER_MIN_METH} \\
+     ${cluster_min_meth} \\
      ${params.DMR_MIN_C} \\
      ${params.HDMR_FOLD_CHANGE}
 
-    sort -k1,1V -k2,2n -o DMRs.bed DMRs.bed
-    sort -k1,1V -k2,2n -o all_context_DMRs.bed all_context_DMRs.bed
     """
+//    sort -k1,1V -k2,2n -o DMRs.${context}.bed DMRs.${context}.bed
+//    sort -k1,1V -k2,2n -o all_context_DMRs.bed all_context_DMRs.bed
 }

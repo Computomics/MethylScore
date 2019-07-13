@@ -43,7 +43,7 @@ MR_FREQ_DISTANCE : 30
 # on all contexts combined (set to 0)? Combined DMRs have consistent coordinates across contexts.
 # In case DMRS_PER_CONTEXT = 0, the two following parameters are used, in the other case the
 # context-specific parameters below.
-DMRS_PER_CONTEXT : 1
+DMRS_PER_CONTEXT : true
 
 # context-specific DMRs in these contexts will be determined:
 DMR_CONTEXTS : CG,CHG,CHH
