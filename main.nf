@@ -23,42 +23,50 @@ log.info"""
 ██║ ╚═╝ ██║███████╗   ██║   ██║  ██║   ██║   ███████╗███████║╚██████╗╚██████╔╝██║  ██║███████╗
 ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝v${workflow.manifest.version}
 ====================================================================================================================================
-Reference genome      : ${params.GENOME}
-Current home          : $HOME
-Current user          : $USER
-Current path          : $PWD
-Script dir            : $baseDir
-Working dir           : $workDir
-Output dir            : ${params.PROJECT_FOLDER}
+Reference genome          : ${params.GENOME}
+Current home              : $HOME
+Current user              : $USER
+Current path              : $PWD
+Script dir                : $baseDir
+Working dir               : $workDir
+Output dir                : ${params.PROJECT_FOLDER}
 ------------------------------------------------------------------------------------------------------------------------------------
-SAMPLE_SHEET          : ${params.SAMPLE_SHEET}
+SAMPLE_SHEET              : ${params.SAMPLE_SHEET}
 ------------------------------------------------------------------------------------------------------------------------------------
-DO_DEDUP              : ${params.DO_DEDUP}
-HUMAN                 : ${params.HUMAN}
-IGV OUTPUT            : ${params.IGV}
-ROI                   : ${params.ROI}
-MR_PARAMS             : ${params.MR_PARAMS}
-STATISTICS            : ${params.STATISTICS}
+DO_DEDUP                  : ${params.DO_DEDUP}
+HUMAN                     : ${params.HUMAN}
+IGV OUTPUT                : ${params.IGV}
+ROI                       : ${params.ROI}
+MR_PARAMS                 : ${params.MR_PARAMS}
+STATISTICS                : ${params.STATISTICS}
 ------------------------------------------------------------------------------------------------------------------------------------
-CLUSTER_MIN_METH      : ${params.CLUSTER_MIN_METH}
-CLUSTER_MIN_METH_DIFF : ${params.CLUSTER_MIN_METH_DIFF}
-DESERT_SIZE           : ${params.DESERT_SIZE}
-DMR_MIN_C             : ${params.DMR_MIN_C}
-DMR_MIN_COV           : ${params.DMR_MIN_COV}
-FDR_CUTOFF            : ${params.FDR_CUTOFF}
-HDMR_FOLD_CHANGE      : ${params.HDMR_FOLD_CHANGE}
-IGNORE_FIRST_BP       : ${params.IGNORE_FIRST_BP}
-IGNORE_LAST_BP        : ${params.IGNORE_LAST_BP}
-MERGE_DIST            : ${params.MERGE_DIST}
-MIN_COVERAGE          : ${params.MIN_COVERAGE}
-MIN_QUAL              : ${params.MIN_QUAL}
-MR_BATCH_SIZE         : ${params.MR_BATCH_SIZE}
-MR_FREQ_CHANGE        : ${params.MR_FREQ_CHANGE}
-MR_FREQ_DISTANCE      : ${params.MR_FREQ_DISTANCE}
-MR_MIN_C              : ${params.MR_MIN_C}
-SLIDING_WINDOW_SIZE   : ${params.SLIDING_WINDOW_SIZE}
-SLIDING_WINDOW_STEP   : ${params.SLIDING_WINDOW_STEP}
-TRIM_METHRATE         : ${params.TRIM_METHRATE}
+DMRS_PER_CONTEXT          : ${params.DMRS_PER_CONTEXT}
+DMR_CONTEXTS              : ${params.DMRS_CONTEXTS}
+CLUSTER_MIN_METH          : ${params.CLUSTER_MIN_METH}
+CLUSTER_MIN_METH_CG       : ${params.CLUSTER_MIN_METH_CG}
+CLUSTER_MIN_METH_CHG      : ${params.CLUSTER_MIN_METH_CHG}
+CLUSTER_MIN_METH_CHH      : ${params.CLUSTER_MIN_METH_CHH}
+CLUSTER_MIN_METH_DIFF     : ${params.CLUSTER_MIN_METH_DIFF}
+CLUSTER_MIN_METH_DIFF_CG  : ${params.CLUSTER_MIN_METH_DIFF_CG}
+CLUSTER_MIN_METH_DIFF_CHG : ${params.CLUSTER_MIN_METH_DIFF_CHG}
+CLUSTER_MIN_METH_DIFF_CHH : ${params.CLUSTER_MIN_METH_DIFF_CHH}
+DESERT_SIZE               : ${params.DESERT_SIZE}
+DMR_MIN_C                 : ${params.DMR_MIN_C}
+DMR_MIN_COV               : ${params.DMR_MIN_COV}
+FDR_CUTOFF                : ${params.FDR_CUTOFF}
+HDMR_FOLD_CHANGE          : ${params.HDMR_FOLD_CHANGE}
+IGNORE_FIRST_BP           : ${params.IGNORE_FIRST_BP}
+IGNORE_LAST_BP            : ${params.IGNORE_LAST_BP}
+MERGE_DIST                : ${params.MERGE_DIST}
+MIN_COVERAGE              : ${params.MIN_COVERAGE}
+MIN_QUAL                  : ${params.MIN_QUAL}
+MR_BATCH_SIZE             : ${params.MR_BATCH_SIZE}
+MR_FREQ_CHANGE            : ${params.MR_FREQ_CHANGE}
+MR_FREQ_DISTANCE          : ${params.MR_FREQ_DISTANCE}
+MR_MIN_C                  : ${params.MR_MIN_C}
+SLIDING_WINDOW_SIZE       : ${params.SLIDING_WINDOW_SIZE}
+SLIDING_WINDOW_STEP       : ${params.SLIDING_WINDOW_STEP}
+TRIM_METHRATE             : ${params.TRIM_METHRATE}
 ------------------------------------------------------------------------------------------------------------------------------------
 Config Profile : ${workflow.profile}
 ====================================================================================================================================
@@ -158,7 +166,6 @@ process MethylScore_mergeReplicates {
        mv ${bamFile} ${sampleID}.merged.passQC.bam
        """
 }
-
 
 if( params.DO_DEDUP ) {
 
