@@ -77,7 +77,7 @@ MR_BATCH_SIZE : 500
 DMR_MIN_COV : 3
 
 # Minimum number of >= DMR_MIN_COV-covered cytosines within (candidate) DMRs:
-DMR_MIN_C : 10
+DMR_MIN_C : 5
 
 # FDR cutoff
 FDR_CUTOFF : 0.05
