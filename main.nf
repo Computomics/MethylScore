@@ -42,6 +42,7 @@ IGV OUTPUT                : ${params.IGV}
 ROI                       : ${params.ROI}
 MR_PARAMS                 : ${params.MR_PARAMS}
 STATISTICS                : ${params.STATISTICS}
+METRICS                   : ${params.METRICS}
 ------------------------------------------------------------------------------------------------------------------------------------
 DMRS_PER_CONTEXT          : ${params.DMRS_PER_CONTEXT}
 DMR_CONTEXTS              : ${params.DMRS_PER_CONTEXT ? params.DMR_CONTEXTS : 'combined'}
@@ -76,7 +77,7 @@ Config Profile : ${workflow.profile}
 """.stripIndent()
 
 if( params.AUTOTRIM ){
-log.warn "MethylScore is running in AUTOTRIM mode. Please review mbias plots in ${params.PROJECT_FOLDER}/01mappings/mbias and adjust IGNORE_OT and IGNORE_OB settings if necessary"
+ log.warn "MethylScore is running in AUTOTRIM mode. Please review mbias plots in ${params.PROJECT_FOLDER}/01mappings/mbias and adjust IGNORE_OT and IGNORE_OB settings if necessary"
 }
 
 roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')

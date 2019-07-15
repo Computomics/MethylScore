@@ -25,6 +25,9 @@ ROI : false
 # Output basic statistics?
 STATISTICS : true
 
+# Output pipeline metrics (report, timeline, trace, dag)?
+METRICS : true
+
 # Perform read de-duplication?
 DO_DEDUP : true
 
