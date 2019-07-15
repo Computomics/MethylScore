@@ -44,15 +44,15 @@ MR_PARAMS                 : ${params.MR_PARAMS}
 STATISTICS                : ${params.STATISTICS}
 ------------------------------------------------------------------------------------------------------------------------------------
 DMRS_PER_CONTEXT          : ${params.DMRS_PER_CONTEXT}
-DMR_CONTEXTS              : ${params.DMR_CONTEXTS}
-CLUSTER_MIN_METH          : ${params.CLUSTER_MIN_METH}
-CLUSTER_MIN_METH_CG       : ${params.CLUSTER_MIN_METH_CG}
-CLUSTER_MIN_METH_CHG      : ${params.CLUSTER_MIN_METH_CHG}
-CLUSTER_MIN_METH_CHH      : ${params.CLUSTER_MIN_METH_CHH}
-CLUSTER_MIN_METH_DIFF     : ${params.CLUSTER_MIN_METH_DIFF}
-CLUSTER_MIN_METH_DIFF_CG  : ${params.CLUSTER_MIN_METH_DIFF_CG}
-CLUSTER_MIN_METH_DIFF_CHG : ${params.CLUSTER_MIN_METH_DIFF_CHG}
-CLUSTER_MIN_METH_DIFF_CHH : ${params.CLUSTER_MIN_METH_DIFF_CHH}
+DMR_CONTEXTS              : ${params.DMRS_PER_CONTEXT ? params.DMR_CONTEXTS : 'combined'}
+CLUSTER_MIN_METH          : ${params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH}
+CLUSTER_MIN_METH_DIFF     : ${params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_DIFF}
+CLUSTER_MIN_METH_CG       : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_CG}
+CLUSTER_MIN_METH_CHG      : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_CHG}
+CLUSTER_MIN_METH_CHH      : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_CHH}
+CLUSTER_MIN_METH_DIFF_CG  : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_DIFF_CG}
+CLUSTER_MIN_METH_DIFF_CHG : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_DIFF_CHG}
+CLUSTER_MIN_METH_DIFF_CHH : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_DIFF_CHH}
 DESERT_SIZE               : ${params.DESERT_SIZE}
 DMR_MIN_C                 : ${params.DMR_MIN_C}
 DMR_MIN_COV               : ${params.DMR_MIN_COV}
