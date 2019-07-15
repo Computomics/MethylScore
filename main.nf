@@ -441,23 +441,24 @@ process MethylScore_callDMRs {
 }
 
 process MethylScore_mergeDMRs {
-    tag "$context"
+    tag "$segments.name"
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
-    set val(context), file('segments.*.dif') from segmentFiles.groupTuple()
+    file(segments) from segmentFiles.collectFile(name: { it[0] })
     file(samples) from samples_mergeDMRs.collect()
 
     output:
     file('*.bed') into DMRs
 
     script:
+    def context = segments.name
     def cluster_min_meth = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH : params."CLUSTER_MIN_METH_${context}"
 
     """
     merge_DMRs-contexts \\
      ${samples} \\
-     <(cat segments.*.dif) \\
+     ${segments} \\
      ${context} \\
      . \\
      ${params.FDR_CUTOFF} \\
@@ -465,7 +466,6 @@ process MethylScore_mergeDMRs {
      ${params.DMR_MIN_C} \\
      ${params.HDMR_FOLD_CHANGE}
 
+    sort -k1,1V -k2,2n -o DMRs.${context}.bed DMRs.${context}.bed
     """
-//    sort -k1,1V -k2,2n -o DMRs.${context}.bed DMRs.${context}.bed
-//    sort -k1,1V -k2,2n -o all_context_DMRs.bed all_context_DMRs.bed
 }
