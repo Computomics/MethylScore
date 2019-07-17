@@ -225,7 +225,7 @@ process MethylScore_splitBams {
     each file(fasta) from fasta_split
 
     output:
-    set val(sampleID), file("${sampleID}.${chromosomeID}.{bam,allC}"), val(chromosomeID) into chrSplit
+    set val(sampleID), file("${sampleID}.{bam,allC}"), val(chromosomeID) into chrSplit
     set val(sampleID), stdout, val(chromosomeID) optional true into mbias
     file('*.svg') optional true into mbias_plots
 
@@ -237,7 +237,7 @@ process MethylScore_splitBams {
       samtools index ${bamFile}
       cat <(samtools view -H ${bamFile} | grep -E '@HD|${chromosomeID}') \\
           <(samtools view ${bamFile} ${chromosomeID}) | \\
-          samtools view -bo ${sampleID}.${chromosomeID}.bam -
+          samtools view -bo ${sampleID}.bam -
 
       MethylDackel mbias \\
           --CHH \\
