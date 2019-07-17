@@ -248,7 +248,7 @@ process MethylScore_splitBams {
       """
     else
       """
-      awk '\$1 == "${chromosomeID}"' ${bamFile} | sort -k2,2n > ${sampleID}.${chromosomeID}.allC
+      awk '\$1 == "${chromosomeID}"' ${bamFile} | sort -k2,2n > ${sampleID}.allC
       """
 }
 
@@ -283,13 +283,14 @@ process MethylScore_callConsensus {
      ${chromosomeID}.fa \\
      ${splitBam}
 
-    tail -n+2 -q *bedGraph | sort -k2,2n > ${sampleID}.${chromosomeID}.allC
+    tail -n+2 -q *bedGraph | sort -k2,2n > ${sampleID}.allC
     """
 }
 
 consensus = !params.BEDGRAPH ? allC : bedSplit
 
 indexedSamples
+ .tap { indexedSamples_matrix; indexedSamples_callMRs; indexedSamples_splitMRs; indexedSamples_callDMRs; indexedSamples_mergeDMRs }
  .combine(consensus, by: 0)
  .groupTuple(by: 3)
  .set {pile}
@@ -301,20 +302,15 @@ process MethylScore_chromosomalmatrix {
     input:
     set val(sampleID), val(Index), file(consensus), val(chromosomeID) from pile
     file(fasta) from fasta_matrix.collect()
+    file(samples) from indexedSamples_matrix.collectFile(){ record -> [ "samples.tsv", record[0] + '\t' + record[0] + '.allC' + '\n' ] }.collect()
 
     output:
     file("${chromosomeID}.genome_matrix.tsv") into splitMatrix
-    set val(sampleID), val(Index) into (indexedSamples_splitting, indexedSamples_MRs) mode flatten
 
     script:
-
     """
-    paste <(printf "${sampleID.join('\n')}") \\
-          <(printf "${consensus.join('\n')}") \\
-          <(printf "${Index.join('\n')}") | sort -k 3,3n > ${chromosomeID}_samples.tsv
-
     generate_genome_matrix \\
-     -s ${chromosomeID}_samples.tsv \\
+     -s ${samples} \\
      -i bismark -r ${chromosomeID}.fa \\
      -o ${chromosomeID}.genome_matrix.tsv
     """
@@ -330,7 +326,7 @@ process MethylScore_callMRs {
 
     input:
     file(matrixWG) from matrixWG_MRs
-    each sample from indexedSamples_MRs.unique()
+    each sample from indexedSamples_callMRs
     file(parameters) from hmm_params_file
 
     output:
@@ -388,16 +384,15 @@ process MethylScore_splitMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
 
     input:
-    file(samplesheet) from indexedSamples_splitting.unique().collectFile( sort: { it[1] } ){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
+    file(samples) from indexedSamples_splitMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
     file(MRfile) from MRs_splitting.collect()
 
     output:
     file('MRbatch*') into MRchunks mode flatten
-    file('samples.tsv') into (samples_callDMRs, samples_mergeDMRs)
 
     script:
     """
-    split_MRfile $samplesheet MRbatch ${params.MR_BATCH_SIZE}
+    split_MRfile ${samples} MRbatch ${params.MR_BATCH_SIZE}
     """
 }
 
@@ -407,7 +402,7 @@ process MethylScore_callDMRs {
 
     input:
     file(matrixWG) from matrixWG_DMRs
-    file(samples) from samples_callDMRs
+    file(samples) from indexedSamples_callDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }
     each file(chunk) from MRchunks
     each context from DMRcontexts
 
@@ -448,7 +443,7 @@ process MethylScore_mergeDMRs {
 
     input:
     file(segments) from segmentFiles.collectFile(name: { it[0] })
-    file(samples) from samples_mergeDMRs.collect()
+    file(samples) from indexedSamples_mergeDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }
 
     output:
     file('*.bed') into DMRs
