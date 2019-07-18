@@ -25,23 +25,25 @@ log.info """
 ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝v${workflow.manifest.version}
 
 ====================================================================================================================================
-Reference genome          : ${params.GENOME}
 Current home              : $HOME
 Current user              : $USER
 Current path              : $PWD
 Script dir                : $baseDir
 Working dir               : $workDir
-Output dir                : ${params.PROJECT_FOLDER}
 ------------------------------------------------------------------------------------------------------------------------------------
+PROJECT_FOLDER            : ${params.PROJECT_FOLDER}
+------------------------------------------------------------------------------------------------------------------------------------
+GENOME                    : ${params.GENOME}
 SAMPLE_SHEET              : ${params.SAMPLE_SHEET}
 ------------------------------------------------------------------------------------------------------------------------------------
-AUTOTRIM                  : ${params.AUTOTRIM}
-DO_DEDUP                  : ${params.DO_DEDUP}
+BEDGRAPH                  : ${params.BEDGRAPH}
+AUTOTRIM                  : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.AUTOTRIM }
+DO_DEDUP                  : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.DO_DEDUP }
+STATISTICS                : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.STATISTICS }
 HUMAN                     : ${params.HUMAN}
 IGV OUTPUT                : ${params.IGV}
 ROI                       : ${params.ROI}
 MR_PARAMS                 : ${params.MR_PARAMS}
-STATISTICS                : ${params.STATISTICS}
 METRICS                   : ${params.METRICS}
 ------------------------------------------------------------------------------------------------------------------------------------
 DMRS_PER_CONTEXT          : ${params.DMRS_PER_CONTEXT}
@@ -59,11 +61,11 @@ DMR_MIN_C                 : ${params.DMR_MIN_C}
 DMR_MIN_COV               : ${params.DMR_MIN_COV}
 FDR_CUTOFF                : ${params.FDR_CUTOFF}
 HDMR_FOLD_CHANGE          : ${params.HDMR_FOLD_CHANGE}
-IGNORE_OT                 : ${params.AUTOTRIM ? 'auto' : params.IGNORE_OT}
-IGNORE_OB                 : ${params.AUTOTRIM ? 'auto' : params.IGNORE_OB}
+IGNORE_OT                 : ${params.AUTOTRIM || params.BEDGRAPH ? "ignored (AUTOTRIM or BEDGRAPH = ${params.AUTOTRIM || params.BEDGRAPH})" : params.IGNORE_OT}
+IGNORE_OB                 : ${params.AUTOTRIM || params.BEDGRAPH ? "ignored (AUTOTRIM or BEDGRAPH = ${params.AUTOTRIM || params.BEDGRAPH})" : params.IGNORE_OB}
 MERGE_DIST                : ${params.MERGE_DIST}
 MIN_COVERAGE              : ${params.MIN_COVERAGE}
-MIN_QUAL                  : ${params.MIN_QUAL}
+MIN_QUAL                  : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.MIN_QUAL }
 MR_BATCH_SIZE             : ${params.MR_BATCH_SIZE}
 MR_FREQ_CHANGE            : ${params.MR_FREQ_CHANGE}
 MR_FREQ_DISTANCE          : ${params.MR_FREQ_DISTANCE}
@@ -76,7 +78,7 @@ Config Profile : ${workflow.profile}
 ====================================================================================================================================
 """.stripIndent()
 
-if( params.AUTOTRIM ){
+if( params.AUTOTRIM && !params.BEDGRAPH ){
  log.warn "MethylScore is running in AUTOTRIM mode. Please review mbias plots in ${params.PROJECT_FOLDER}/01mappings/mbias and adjust IGNORE_OT and IGNORE_OB settings if necessary"
 }
 
