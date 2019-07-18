@@ -106,7 +106,9 @@ Channel
   .splitText()
   .map{ line ->
         def list = line.split()
-        [ 'sampleID':list[0], 'filePath':file(list[-1]) ]
+        def path = file(list[-1])
+        assert path.exists(), "${path} doesn't exist!"
+        [ 'sampleID':list[0], 'filePath':path ]
       }
   .set { inputMap }
 
@@ -402,7 +404,7 @@ process MethylScore_callDMRs {
 
     input:
     file(matrixWG) from matrixWG_DMRs
-    file(samples) from indexedSamples_callDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }
+    file(samples) from indexedSamples_callDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }.collect()
     each file(chunk) from MRchunks
     each context from DMRcontexts
 
@@ -443,7 +445,7 @@ process MethylScore_mergeDMRs {
 
     input:
     file(segments) from segmentFiles.collectFile(name: { it[0] })
-    file(samples) from indexedSamples_mergeDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }
+    file(samples) from indexedSamples_mergeDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }.collect()
 
     output:
     file('*.bed') into DMRs
