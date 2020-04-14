@@ -456,9 +456,11 @@ process MethylScore_mergeDMRs {
     def cluster_min_meth = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH : params."CLUSTER_MIN_METH_${context}"
 
     """
+    python $baseDir/bin/pv2qv.py ${segments} ${segments}.qv
+
     merge_DMRs-contexts \\
      ${samples} \\
-     ${segments} \\
+     ${segments}.qv \\
      ${context} \\
      . \\
      ${params.FDR_CUTOFF} \\
