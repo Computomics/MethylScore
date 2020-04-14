@@ -436,8 +436,7 @@ process MethylScore_callDMRs {
      -B $baseDir/bin/betabin_model \\
      -Y $baseDir/bin/pv2qv.py \\
      --no-post-process \\
-     -o ${chunk}.${context}.out \\
-     -g
+     -o ${chunk}.${context}.out
     """
 }
 
