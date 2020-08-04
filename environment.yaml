@@ -10,5 +10,5 @@ dependencies:
   - bioconda::bamtools=2.5.1
   - bioconda::bedtools=2.29.2
   - bioconda::picard=2.23.3
-  - bioconda::MethylDackel=0.5.1
+  - bioconda::MethylDackel=0.4.0
 
