@@ -8,7 +8,7 @@ RUN apt-get update
 RUN apt-get install -y build-essential procps libgsl-dev perl cpanminus
 RUN apt-get clean -y
 
-COPY environment.yml /
+COPY environment.yaml /
 
 #Install perl modules
 RUN cpanm --notest Getopt::Long \
@@ -27,5 +27,5 @@ RUN cpanm --notest Getopt::Long \
 	List::Util \
 	Compress::BGZF::Reader
 
-RUN conda env create -f /environment.yml && conda clean -a
+RUN conda env create -f /environment.yaml && conda clean -a
 ENV PATH /opt/conda/envs/MethylScore/bin:$PATH
