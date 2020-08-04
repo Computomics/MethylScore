@@ -4,12 +4,10 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - samtools=1.9
-  - tabix=0.2.5
-  - bamtools=2.5.1
-  - bedtools=2.27.1
-  - picard=2.18.11
-  - scipy=1.2.1
-  - perl=5.26.2
-  - methylextract=1.9.1
-  - MethylDackel=0.4.0
+  - conda-forge::scipy=1.5.2
+  - bioconda::samtools=1.10
+  - bioconda::tabix=0.2.6
+  - bioconda::bamtools=2.5.1
+  - bioconda::bedtools=2.29.2
+  - bioconda::picard=2.23.3
+  - bioconda::MethylDackel=0.5.1

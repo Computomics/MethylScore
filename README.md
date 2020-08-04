@@ -9,12 +9,12 @@ A [nextflow](https://www.nextflow.io/) implementation of Computomics' MethylScor
 
 ## Setting up the environment
 
-The only software dependencies that are required to run MethylScore-nf are [nextflow](https://www.nextflow.io/), and one of the following: [Singularity](https://www.sylabs.io/singularity/), [Conda](https://conda.io) or [Docker](https://www.docker.com/).
+The only software dependencies that are required to run MethylScore-nf are [nextflow](https://www.nextflow.io/), and one of the following: [Singularity](https://www.sylabs.io/singularity/), [Docker](https://www.docker.com/) or [Podman](https://podman.io/).
 
 For example if you want to run the pipeline on the CBE cluster using Singularity, do the following on the login node:
 
 ```bash
-module load nextflow/20.01.0 && module load singularity/3.4.1
+module load nextflow/20.01.0
 ```
 
 ## Running the pipeline
@@ -49,14 +49,10 @@ Note that you have to provide one of them with the `-profile` flag, in addition 
 
 ### Singularity
 The Singularity profile uses a [prebuilt docker container](https://hub.docker.com/r/beckerlab/methylscore/) that includes all dependencies needed to run the pipeline.
-To run on CBE, you have to `module load singularity/3.4.1` first and then specify `-profile cbe,singularity`
+To run on CBE, you have to specify `-profile cbe,singularity`
 
-### Conda
-The Conda profile uses [Bioconda](https://bioconda.github.io/) to resolve dependencies. It creates a virtual environment and resolves dependencies according to the `environment.yaml` file.
-To run on CBE, you have to `module load anaconda3/2019.10` first and then specify `-profile cbe,conda`
+### Docker or Podman
+While these are very similar to the Singularity profile, they are usually not available in Cluster environments.
+They are nevertheless very useful for local runs of the pipeline.
 
-### Docker
-While this is very similar to the Singularity profile, it is usually not available in Cluster environments.
-It is nevertheless very useful for local runs of the pipeline.
-
-Note: with `-profile local,conda` or `-profile local,docker` you can easily run the pipeline on your local computer, given you have nextflow and Conda or Docker installed.
+Note: with `-profile local,docker` `-profile local,podman` you can easily run the pipeline on your local computer, given you have nextflow and Docker or Podman installed.
