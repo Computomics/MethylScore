@@ -3,8 +3,8 @@ name: Docker Container
 on:
   push:
     paths:
-      - 'containers/base/Dockerfile'
-      - 'containers/base/environment.yaml'
+      - 'Dockerfile'
+      - 'environment.yaml'
 
 jobs:
   push_to_registry:

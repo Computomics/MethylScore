@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         nxf_ver: ["20.01.0", ""]
-        mode: [--SAMPLE_SHEET 'https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/samplesheet.tsv', '--SAMPLE_SHEET https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/samplesheet_bedGraph.tsv --BEDGRAPH']
+        mode: ['--SAMPLE_SHEET https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/samplesheet.tsv', '--SAMPLE_SHEET https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/samplesheet_bedGraph.tsv --BEDGRAPH']
     steps:
       - uses: actions/checkout@v2
 

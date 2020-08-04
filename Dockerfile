@@ -29,3 +29,4 @@ RUN cpanm --notest Getopt::Long \
 
 RUN conda env create -f /environment.yaml && conda clean -a
 ENV PATH /opt/conda/envs/MethylScore/bin:$PATH
+
