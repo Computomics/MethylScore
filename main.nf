@@ -312,7 +312,7 @@ process MethylScore_chromosomalmatrix {
 
     script:
     """
-    generate_genome_matrix \\
+    perl generate_genome_matrix.pl \\
      -s ${samples} \\
      -i bismark -r ${chromosomeID}.fa \\
      -o ${chromosomeID}.genome_matrix.tsv
@@ -395,7 +395,7 @@ process MethylScore_splitMRs {
 
     script:
     """
-    split_MRfile ${samples} MRbatch ${params.MR_BATCH_SIZE}
+    perl split_MRfile.pl ${samples} MRbatch ${params.MR_BATCH_SIZE}
     """
 }
 
@@ -420,7 +420,7 @@ process MethylScore_callDMRs {
     """
     mkdir ${chunk}.${context}.out
 
-    dmrs-contexts \\
+    perl SEGMENTS-contexts.pl \\
      -c ${context} \\
      -s ${samples} \\
      -r ${chunk} \\
@@ -458,7 +458,7 @@ process MethylScore_mergeDMRs {
     """
     python $baseDir/bin/pv2qv.py ${segments} ${segments}.qv
 
-    merge_DMRs-contexts \\
+    perl merge_DMRs-contexts.pl \\
      ${samples} \\
      ${segments}.qv \\
      ${context} \\
