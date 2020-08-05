@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-#  Copyright (C) 2011 Oliver Stegle, modified by Joerg Hagmann
+
+#  Copyright (C) 2011 Oliver Stegle, modified by Joerg Hagmann, Patrick Huether
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,11 +15,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import scipy as SP
+import numpy as np
 import sys
-import scipy.stats as st
 from shutil import copyfile
-
 
 def estimate_q_values(PV,m=None,pi=1.0):
     """estimate q vlaues from a list of Pvalues
@@ -38,8 +37,8 @@ def estimate_q_values(PV,m=None,pi=1.0):
 
     #2. estimate lambda
     if pi is None:
-        lrange = SP.linspace(0.05,0.95,max(lPV/100.0,10))
-        pil    = SP.double((PV[:,SP.newaxis]>lrange).sum(axis=0))/lPV
+        lrange = np.linspace(0.05,0.95,max(lPV/100.0,10))
+        pil    = np.double((PV[:,np.newaxis]>lrange).sum(axis=0))/lPV
         pilr   = pil/(1.0-lrange)
         #ok, I think for SNPs this is pretty useless, pi is close to 1!
         pi =1.0
@@ -54,7 +53,7 @@ def estimate_q_values(PV,m=None,pi=1.0):
     for i in range(lPV-2,-1,-1):
         QV_[i] = min(pi*m*PV[i]/(i+1.0),QV_[i+1])
     #5. invert sorting
-    QV = SP.zeros_like(PV)
+    QV = np.zeros_like(PV)
     QV[IPV] = QV_
     return QV
 
@@ -68,23 +67,22 @@ if __name__ == '__main__':
     pv_file = sys.argv[1]
     qv_file = sys.argv[2]
 
-    M = SP.loadtxt(pv_file,dtype='str')
+    M = np.loadtxt(pv_file,dtype='str')
     if len(M.shape)<2:
-                #M= M[:,SP.newaxis]
-                copyfile(pv_file, qv_file)
-                sys.exit()
+        copyfile(pv_file, qv_file)
+        sys.exit()
     
-    R = SP.empty([M.shape[0],M.shape[1]+1],dtype='object')
+    R = np.empty([M.shape[0],M.shape[1]+1],dtype='object')
     R[:,0:-1] = M
 
     pv_str = M[:,-1]
     pv_str[pv_str=='NA'] = 'NAN'
 
     #ok convert to qv
-    pv = SP.array(pv_str,dtype='float')
-    pv[SP.isnan(pv)] = 1.0
+    pv = np.array(pv_str,dtype='float')
+    pv[np.isnan(pv)] = 1.0
 
     qv = estimate_q_values(pv)
     R[:,-1] = qv
 
-    SP.savetxt(qv_file,R,fmt='%s',delimiter='\t')
+    np.savetxt(qv_file,R,fmt='%s',delimiter='\t')

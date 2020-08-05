@@ -4,7 +4,7 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - conda-forge::scipy=1.5.2
+  - conda-forge::numpy=1.19.1
   - bioconda::samtools=1.9
   - bioconda::tabix=0.2.6
   - bioconda::bamtools=2.5.1
