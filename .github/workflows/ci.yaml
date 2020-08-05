@@ -1,0 +1,30 @@
+name: Integration test
+on:
+  pull_request:
+    branches:
+      - master
+      - dev
+  push:
+    branches-ignore:
+      - master
+
+jobs:
+  CI:
+    env:
+      NXF_VER: ${{ matrix.nxf_ver }}
+      NXF_ANSI_LOG: false
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        nxf_ver: ["20.01.0", ""]
+        mode: ['', '--BEDGRAPH']
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Nextflow
+        run: |
+          wget -qO- get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+      - name: Run MethylScore on test data
+        run: |
+          nextflow run ${GITHUB_WORKSPACE} ${{ matrix.mode }} -profile testing,docker

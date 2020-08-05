@@ -6,9 +6,20 @@ class ParameterChecks {
     assert params.IGV instanceof Boolean, "IGV must be set to either false (off) or true (on)"
     assert params.STATISTICS instanceof Boolean, "STATISTICS must be set to either false (off) or true (on)"
     assert params.DO_DEDUP instanceof Boolean, "DO_DEDUP must be set to either false (off) or true (on)"
+    assert params.DMRS_PER_CONTEXT instanceof Boolean, "DMRS_PER_CONTEXT must be set to either false (off) or true (on)"
+    assert params.DMR_CONTEXTS.tokenize(',').size() in 1..3 && params.DMR_CONTEXTS =~ "C[G,H]{1,2}", "DMR_CONTEXTS must be CG, CHG or CHH!"
     assert params.MR_FREQ_CHANGE in 0..100, "MR_FREQ_CHANGE must be between 0 and 100!"
-    assert params.CLUSTER_MIN_METH_DIFF in 0..100, "CLUSTER_MIN_METH_DIFF must be between 0 and 100!"
-    assert params.CLUSTER_MIN_METH in 0..100, "CLUSTER_MIN_METH must be between 0 and 100!"
+    if (params.DMRS_PER_CONTEXT) {
+      assert params.CLUSTER_MIN_METH_DIFF_CG in 0..100, "CLUSTER_MIN_METH_DIFF_CG must be between 0 and 100!"
+      assert params.CLUSTER_MIN_METH_DIFF_CHG in 0..100, "CLUSTER_MIN_METH_DIFF_CHG must be between 0 and 100!"
+      assert params.CLUSTER_MIN_METH_DIFF_CHH in 0..100, "CLUSTER_MIN_METH_DIFF_CHH must be between 0 and 100!"
+      assert params.CLUSTER_MIN_METH_CG in 0..100, "CLUSTER_MIN_METH_CG must be between 0 and 100!"
+      assert params.CLUSTER_MIN_METH_CHG in 0..100, "CLUSTER_MIN_METH_CHG must be between 0 and 100!"
+      assert params.CLUSTER_MIN_METH_CHH in 0..100, "CLUSTER_MIN_METH_CHH must be between 0 and 100!"
+    } else if (!params.DMRS_PER_CONTEXT) {
+      assert params.CLUSTER_MIN_METH_DIFF in 0..100, "CLUSTER_MIN_METH_DIFF must be between 0 and 100!"
+      assert params.CLUSTER_MIN_METH in 0..100, "CLUSTER_MIN_METH must be between 0 and 100!"
+    }
     assert params.MR_FREQ_DISTANCE instanceof Integer && params.MR_FREQ_DISTANCE >= 0, "MR_FREQ_DISTANCE must be a non-negative integer!"
     assert params.SLIDING_WINDOW_SIZE instanceof Integer && params.SLIDING_WINDOW_SIZE >= 0, "SLIDING_WINDOW_SIZE must be a non-negative integer!"
     assert params.SLIDING_WINDOW_STEP instanceof Integer && params.SLIDING_WINDOW_STEP >= 0, "SLIDING_WINDOW_STEP must be a non-negative integer!"

@@ -24,54 +24,69 @@ log.info """
 ██║ ╚═╝ ██║███████╗   ██║   ██║  ██║   ██║   ███████╗███████║╚██████╗╚██████╔╝██║  ██║███████╗
 ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝v${workflow.manifest.version}
 
-===================================================================================================================================
-Reference genome      : ${params.GENOME}
-Current home          : $HOME
-Current user          : $USER
-Current path          : $PWD
-Script dir            : $baseDir
-Working dir           : $workDir
-Output dir            : ${params.PROJECT_FOLDER}
------------------------------------------------------------------------------------------------------------------------------------
-SAMPLE_SHEET          : ${params.SAMPLE_SHEET}
------------------------------------------------------------------------------------------------------------------------------------
-DO_DEDUP              : ${params.DO_DEDUP}
-HUMAN                 : ${params.HUMAN}
-IGV OUTPUT            : ${params.IGV}
-ROI                   : ${params.ROI}
-MR_PARAMS             : ${params.MR_PARAMS}
-STATISTICS            : ${params.STATISTICS}
------------------------------------------------------------------------------------------------------------------------------------
-CLUSTER_MIN_METH      : ${params.CLUSTER_MIN_METH}
-CLUSTER_MIN_METH_DIFF : ${params.CLUSTER_MIN_METH_DIFF}
-DESERT_SIZE           : ${params.DESERT_SIZE}
-DMR_MIN_C             : ${params.DMR_MIN_C}
-DMR_MIN_COV           : ${params.DMR_MIN_COV}
-FDR_CUTOFF            : ${params.FDR_CUTOFF}
-HDMR_FOLD_CHANGE      : ${params.HDMR_FOLD_CHANGE}
-IGNORE_OT             : ${params.AUTOTRIM ? 'auto' : params.IGNORE_OT}
-IGNORE_OB             : ${params.AUTOTRIM ? 'auto' : params.IGNORE_OB}
-MERGE_DIST            : ${params.MERGE_DIST}
-MIN_COVERAGE          : ${params.MIN_COVERAGE}
-MIN_QUAL              : ${params.MIN_QUAL}
-MR_BATCH_SIZE         : ${params.MR_BATCH_SIZE}
-MR_FREQ_CHANGE        : ${params.MR_FREQ_CHANGE}
-MR_FREQ_DISTANCE      : ${params.MR_FREQ_DISTANCE}
-MR_MIN_C              : ${params.MR_MIN_C}
-SLIDING_WINDOW_SIZE   : ${params.SLIDING_WINDOW_SIZE}
-SLIDING_WINDOW_STEP   : ${params.SLIDING_WINDOW_STEP}
-TRIM_METHRATE         : ${params.TRIM_METHRATE}
------------------------------------------------------------------------------------------------------------------------------------
+====================================================================================================================================
+Current home              : $HOME
+Current user              : $USER
+Current path              : $PWD
+Script dir                : $baseDir
+Working dir               : $workDir
+------------------------------------------------------------------------------------------------------------------------------------
+PROJECT_FOLDER            : ${params.PROJECT_FOLDER}
+------------------------------------------------------------------------------------------------------------------------------------
+GENOME                    : ${params.GENOME}
+SAMPLE_SHEET              : ${params.SAMPLE_SHEET}
+------------------------------------------------------------------------------------------------------------------------------------
+BEDGRAPH                  : ${params.BEDGRAPH}
+AUTOTRIM                  : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.AUTOTRIM }
+DO_DEDUP                  : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.DO_DEDUP }
+STATISTICS                : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.STATISTICS }
+HUMAN                     : ${params.HUMAN}
+IGV OUTPUT                : ${params.IGV}
+ROI                       : ${params.ROI}
+MR_PARAMS                 : ${params.MR_PARAMS}
+METRICS                   : ${params.METRICS}
+------------------------------------------------------------------------------------------------------------------------------------
+DMRS_PER_CONTEXT          : ${params.DMRS_PER_CONTEXT}
+DMR_CONTEXTS              : ${params.DMRS_PER_CONTEXT ? params.DMR_CONTEXTS : 'combined'}
+CLUSTER_MIN_METH          : ${params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH}
+CLUSTER_MIN_METH_DIFF     : ${params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_DIFF}
+CLUSTER_MIN_METH_CG       : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_CG}
+CLUSTER_MIN_METH_CHG      : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_CHG}
+CLUSTER_MIN_METH_CHH      : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_CHH}
+CLUSTER_MIN_METH_DIFF_CG  : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_DIFF_CG}
+CLUSTER_MIN_METH_DIFF_CHG : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_DIFF_CHG}
+CLUSTER_MIN_METH_DIFF_CHH : ${!params.DMRS_PER_CONTEXT ? "ignored (DMRS_PER_CONTEXT = ${params.DMRS_PER_CONTEXT})" : params.CLUSTER_MIN_METH_DIFF_CHH}
+DESERT_SIZE               : ${params.DESERT_SIZE}
+DMR_MIN_C                 : ${params.DMR_MIN_C}
+DMR_MIN_COV               : ${params.DMR_MIN_COV}
+FDR_CUTOFF                : ${params.FDR_CUTOFF}
+HDMR_FOLD_CHANGE          : ${params.HDMR_FOLD_CHANGE}
+IGNORE_OT                 : ${params.AUTOTRIM || params.BEDGRAPH ? "ignored (AUTOTRIM or BEDGRAPH = ${params.AUTOTRIM || params.BEDGRAPH})" : params.IGNORE_OT}
+IGNORE_OB                 : ${params.AUTOTRIM || params.BEDGRAPH ? "ignored (AUTOTRIM or BEDGRAPH = ${params.AUTOTRIM || params.BEDGRAPH})" : params.IGNORE_OB}
+MERGE_DIST                : ${params.MERGE_DIST}
+MIN_COVERAGE              : ${params.MIN_COVERAGE}
+MIN_QUAL                  : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.MIN_QUAL }
+MR_BATCH_SIZE             : ${params.MR_BATCH_SIZE}
+MR_FREQ_CHANGE            : ${params.MR_FREQ_CHANGE}
+MR_FREQ_DISTANCE          : ${params.MR_FREQ_DISTANCE}
+MR_MIN_C                  : ${params.MR_MIN_C}
+SLIDING_WINDOW_SIZE       : ${params.SLIDING_WINDOW_SIZE}
+SLIDING_WINDOW_STEP       : ${params.SLIDING_WINDOW_STEP}
+TRIM_METHRATE             : ${params.TRIM_METHRATE}
+------------------------------------------------------------------------------------------------------------------------------------
 Config Profile : ${workflow.profile}
-===================================================================================================================================
+====================================================================================================================================
 """.stripIndent()
 
-if( params.AUTOTRIM ){
-log.warn "MethylScore is running in AUTOTRIM mode. Please review mbias plots in ${params.PROJECT_FOLDER}/01mappings/mbias and adjust IGNORE_OT and IGNORE_OB settings if necessary"
+if( params.AUTOTRIM && !params.BEDGRAPH ){
+ log.warn "MethylScore is running in AUTOTRIM mode. Please review mbias plots in ${params.PROJECT_FOLDER}/01mappings/mbias and adjust IGNORE_OT and IGNORE_OB settings if necessary"
 }
 
 roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
 hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfExists: true).collect() : file('null')
+
+// Create a channel for contexts to be analysed. Set to 'combined' if DMRS_PER_CONTEXT = false, because this is what dmrs-contexts expects
+DMRcontexts = params.DMRS_PER_CONTEXT ? Channel.from(params.DMR_CONTEXTS.tokenize(',')) : Channel.from('combined')
 
 /*
  * Create a channel for the reference genome and split it by chromosome
@@ -93,7 +108,9 @@ Channel
   .splitText()
   .map{ line ->
         def list = line.split()
-        [ 'sampleID':list[0], 'filePath':file(list[-1]) ]
+        def path = file(list[-1])
+        assert path.exists(), "${path} doesn't exist!"
+        [ 'sampleID':list[0], 'filePath':path ]
       }
   .set { inputMap }
 
@@ -103,7 +120,7 @@ inputMap
   .groupTuple()
   .tap { samples }
   .map { record -> tuple( record[0], sampleIndex++ ) }
-  .set{ indexedSamples }
+  .set { indexedSamples }
 
 (samples_bam, samples_bedGraph) = !params.BEDGRAPH ? [ samples, Channel.empty() ] : [ Channel.empty(), samples ]
 
@@ -116,10 +133,10 @@ process MethylScore_mergeReplicates {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), file(bamFile) from samples_bam
+    tuple val(sampleID), path(bamFile) from samples_bam
 
     output:
-    set val(sampleID), file('*.bam') into mergedSamples
+    tuple val(sampleID), path('*.bam') into mergedSamples
 
     when:
     !params.BEDGRAPH
@@ -127,7 +144,7 @@ process MethylScore_mergeReplicates {
     script:
     if( bamFile.toList().size() != 1 )
        """
-       picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -Djava.io.tmpdir='.' -XX:ParallelGCThreads=1 \\
+       picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -XX:ParallelGCThreads=1 \\
         MergeSamFiles \\
         I=${bamFile.join(' I=')} \\
         O=${sampleID}.merged.sorted.bam \\
@@ -150,25 +167,24 @@ if( params.DO_DEDUP ) {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), file(bamFile) from mergedSamples
+    tuple val(sampleID), path(bamFile) from mergedSamples
 
     output:
-    set val(sampleID), file('*dedup.bam') into (dedup, read_stats)
-    file ('dedup.metrics.txt')
+    tuple val(sampleID), path('*dedup.bam') into (dedup, read_stats)
+    path('dedup.metrics.txt')
 
     when:
     !params.BEDGRAPH
 
     script:
     """
-    picard -Xmx${task.memory.toMega()}m -Xms${task.memory.toMega() / 4}m -Djava.io.tmpdir='.' -XX:ParallelGCThreads=1 \\
+    picard -Xmx${task.memory.toMega() - 512}m -Xms${task.memory.toMega() / 4}m -XX:ParallelGCThreads=1 \\
       MarkDuplicates \\
         I=${bamFile} \\
         O=${sampleID}.dedup.bam \\
         METRICS_FILE=dedup.metrics.txt \\
         REMOVE_DUPLICATES=true \\
         MAX_FILE_HANDLES=1 \\
-        TMP_DIR=. \\
         VALIDATION_STRINGENCY=LENIENT
     """
 }
@@ -184,11 +200,11 @@ process MethylScore_readStatistics {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), file(bamFile) from read_stats
-    file(ROIs) from roi_file
+    tuple val(sampleID), path(bamFile) from read_stats
+    path(ROIs) from roi_file
 
     output:
-    file ('*') into stats
+    path('*') into stats
 
     when:
     params.STATISTICS && !params.BEDGRAPH
@@ -208,13 +224,13 @@ process MethylScore_splitBams {
        saveAs: {filename -> filename.endsWith(".svg") ? "mbias/$filename" : "${sampleID}/split/${chromosomeID}/${filename}"}
 
     input:
-    set val(sampleID), file(bamFile) from dedup.mix(samples_bedGraph)
-    each file(fasta) from fasta_split
+    tuple val(sampleID), path(bamFile) from dedup.mix(samples_bedGraph)
+    each path(fasta) from fasta_split
 
     output:
-    set val(sampleID), file("${sampleID}.${chromosomeID}.{bam,allC}"), val(chromosomeID) into chrSplit
-    set val(sampleID), stdout, val(chromosomeID) optional true into mbias
-    file('*.svg') optional true into mbias_plots
+    tuple val(sampleID), path("${sampleID}.{${chromosomeID}.bam,allC}"), val(chromosomeID) into chrSplit
+    tuple val(sampleID), stdout, val(chromosomeID) optional true into mbias
+    path('*.svg') optional true into mbias_plots
 
     script:
     chromosomeID = fasta.baseName
@@ -235,7 +251,7 @@ process MethylScore_splitBams {
       """
     else
       """
-      awk '\$1 == "${chromosomeID}"' ${bamFile} | sort -k2,2n > ${sampleID}.${chromosomeID}.allC
+      awk '\$1 == "${chromosomeID}"' ${bamFile} | sort -k2,2n > ${sampleID}.allC
       """
 }
 
@@ -246,11 +262,11 @@ process MethylScore_callConsensus {
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(chromosomeID), file(splitBam), val(mbias) from bamSplit.combine(mbias, by:[0,2])
-    file(fasta) from fasta_consensus.collect()
+    tuple val(sampleID), val(chromosomeID), path(splitBam), val(mbias) from bamSplit.combine(mbias, by:[0,2])
+    path(fasta) from fasta_consensus.collect()
 
     output:
-    set val(sampleID), file('*.allC'), val(chromosomeID) into allC
+    tuple val(sampleID), path('*.allC'), val(chromosomeID) into allC
 
     when:
     !params.BEDGRAPH
@@ -270,38 +286,34 @@ process MethylScore_callConsensus {
      ${chromosomeID}.fa \\
      ${splitBam}
 
-    tail -n+2 -q *bedGraph | sort -k2,2n > ${sampleID}.${chromosomeID}.allC
+    tail -n+2 -q *bedGraph | sort -k2,2n > ${sampleID}.allC
     """
 }
 
 consensus = !params.BEDGRAPH ? allC : bedSplit
 
 indexedSamples
+ .tap { indexedSamples_matrix; indexedSamples_callMRs; indexedSamples_splitMRs; indexedSamples_callDMRs; indexedSamples_mergeDMRs }
  .combine(consensus, by: 0)
  .groupTuple(by: 3)
- .set {pile}
+ .set { pile }
 
 process MethylScore_chromosomalmatrix {
     tag "${chromosomeID}"
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    set val(sampleID), val(Index), file(consensus), val(chromosomeID) from pile
-    file(fasta) from fasta_matrix.collect()
+    tuple val(sampleID), val(Index), path(consensus), val(chromosomeID) from pile
+    path(fasta) from fasta_matrix.collect()
+    path(samples) from indexedSamples_matrix.collectFile(){ record -> [ "samples.tsv", record[0] + '\t' + record[0] + '.allC' + '\n' ] }.collect()
 
     output:
-    file("${chromosomeID}.genome_matrix.tsv") into splitMatrix
-    set val(sampleID), val(Index) into (indexedSamples_splitting, indexedSamples_MRs) mode flatten
+    path("${chromosomeID}.genome_matrix.tsv") into splitMatrix
 
     script:
-
     """
-    paste <(printf "${sampleID.join('\n')}") \\
-          <(printf "${consensus.join('\n')}") \\
-          <(printf "${Index.join('\n')}") | sort -k 3,3n > ${chromosomeID}_samples.tsv
-
-    generate_genome_matrix \\
-     -s ${chromosomeID}_samples.tsv \\
+    perl ${baseDir}/bin/generate_genome_matrix.pl \\
+     -s ${samples} \\
      -i bismark -r ${chromosomeID}.fa \\
      -o ${chromosomeID}.genome_matrix.tsv
     """
@@ -316,14 +328,14 @@ process MethylScore_callMRs {
     publishDir "${params.PROJECT_FOLDER}/04MRs/${sample.getAt(0)}", mode: 'copy'
 
     input:
-    file(matrixWG) from matrixWG_MRs
-    each sample from indexedSamples_MRs.unique()
-    file(parameters) from hmm_params_file
+    path(matrixWG) from matrixWG_MRs
+    each sample from indexedSamples_callMRs
+    path(parameters) from hmm_params_file
 
     output:
-    file("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_splitting)
-    file("${sample.getAt(0)}.hmm_params") optional true into hmm_params
-    file("${sample.getAt(0)}.MR_stats.tsv") into MR_stats
+    path("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_splitting)
+    path("${sample.getAt(0)}.hmm_params") optional true into hmm_params
+    path("${sample.getAt(0)}.MR_stats.tsv") into MR_stats
 
     script:
     def HUMAN = params.HUMAN ? "-human" : ""
@@ -354,11 +366,11 @@ process MethylScore_igv {
     publishDir "${params.PROJECT_FOLDER}/igv", mode: 'copy'
 
     input:
-    file(bed) from MRs_igv.collect()
-    file(matrixWG) from matrixWG_igv
+    path(bed) from MRs_igv.collect()
+    path(matrixWG) from matrixWG_igv
 
     output:
-    file('methinfo.igv') into igv
+    path('methinfo.igv') into igv
 
     when:
     params.IGV
@@ -375,43 +387,47 @@ process MethylScore_splitMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
 
     input:
-    file(samplesheet) from indexedSamples_splitting.unique().collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
-    file(MRfile) from MRs_splitting.collect()
+    path(samples) from indexedSamples_splitMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
+    path(MRfile) from MRs_splitting.collect()
 
     output:
-    file('MRbatch*') into MRchunks mode flatten
-    file('samples.tsv') into (samples_callDMRs, samples_mergeDMRs)
+    path('MRbatch*') into MRchunks mode flatten
 
     script:
     """
-    split_MRfile $samplesheet MRbatch ${params.MR_BATCH_SIZE}
+    perl ${baseDir}/bin/split_MRfile.pl ${samples} MRbatch ${params.MR_BATCH_SIZE}
     """
 }
 
 process MethylScore_callDMRs {
-    tag "$chunk"
+    tag "$context:$chunk"
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
-    file(matrixWG) from matrixWG_DMRs
-    file(samples) from samples_callDMRs
-    each file(chunk) from MRchunks
+    path(matrixWG) from matrixWG_DMRs
+    path(samples) from indexedSamples_callDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }.collect()
+    each path(chunk) from MRchunks
+    each context from DMRcontexts
 
     output:
-    file('*/*.bed') optional true into bedFiles
-    file('*/*.dif') into segmentFiles
+    path('*/*.bed') optional true into bedFiles
+    tuple val(context), path('*/*.dif') optional true into segmentFiles
 
     script:
-    """
-    mkdir ${chunk}.out
+    def cluster_min_meth = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH : params."CLUSTER_MIN_METH_${context}"
+    def cluster_min_meth_diff = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH_DIFF : params."CLUSTER_MIN_METH_DIFF_${context}"
 
-    dmrs \\
+    """
+    mkdir ${chunk}.${context}.out
+
+    perl ${baseDir}/bin/SEGMENTS-contexts.pl \\
+     -c ${context} \\
      -s ${samples} \\
      -r ${chunk} \\
      -m ${matrixWG} \\
      -p ${params.MR_FREQ_CHANGE} \\
-     -i ${params.CLUSTER_MIN_METH_DIFF} \\
-     -j ${params.CLUSTER_MIN_METH} \\
+     -i ${cluster_min_meth_diff} \\
+     -j ${cluster_min_meth} \\
      -v ${params.DMR_MIN_COV} \\
      -n ${params.DMR_MIN_C} \\
      -w ${params.SLIDING_WINDOW_SIZE} \\
@@ -420,36 +436,50 @@ process MethylScore_callDMRs {
      -B $baseDir/bin/betabin_model \\
      -Y $baseDir/bin/pv2qv.py \\
      --no-post-process \\
-     -o ${chunk}.out
+     -o ${chunk}.${context}.out
     """
 }
 
 process MethylScore_mergeDMRs {
-    tag "$segments"
+    tag "$segments.name"
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
-    file(segments) from segmentFiles.collectFile(name:'segments.dif')
-    file(samples) from samples_mergeDMRs
+    path(segments) from segmentFiles.collectFile(name: { it[0] })
+    path(samples) from indexedSamples_mergeDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }.collect()
 
     output:
-    file('DMRs.bed') into DMRs
-    file('all_context_DMRs.bed') into all_context_DMRs
+    path('*.bed') into DMRs
 
     script:
+    def context = segments.name
     """
-    merge_DMRs \\
+    cat <<EOF >> parameters.config
+    PYTHON_PATH:  "python"
+    SCRIPT_PATH: "${baseDir}/bin"
+    FDR_CUTOFF: ${params.FDR_CUTOFF}
+    CLUSTER_MIN_METH_CG:  ${params.CLUSTER_MIN_METH_CG}
+    CLUSTER_MIN_METH_CHG: ${params.CLUSTER_MIN_METH_CHG}
+    CLUSTER_MIN_METH_CHH: ${params.CLUSTER_MIN_METH_CHH}
+    DMR_MIN_C:  ${params.DMR_MIN_C}
+    HDMR_FOLD_CHANGE: ${params.HDMR_FOLD_CHANGE}
+    EOF
+
+    perl ${baseDir}/bin/merge_DMRs-contexts.pl \\
      ${samples} \\
      ${segments} \\
      . \\
-     python \\
-     $baseDir/bin/pv2qv.py \\
-     ${params.FDR_CUTOFF} \\
-     ${params.CLUSTER_MIN_METH} \\
-     ${params.DMR_MIN_C} \\
-     ${params.HDMR_FOLD_CHANGE}
+     parameters.config \\
+     ${context}
 
-    sort -k1,1V -k2,2n -o DMRs.bed DMRs.bed
-    sort -k1,1V -k2,2n -o all_context_DMRs.bed all_context_DMRs.bed
+    sort -k1,1V -k2,2n -o DMRs.${context}.bed DMRs.${context}.bed
     """
+}
+
+workflow.onComplete {
+    if ( workflow.success ) {
+      log.info "[$workflow.complete] >> MethylScore finished SUCCESSFULLY after $workflow.duration and found ${DMRs.collectFile(name: 'allDMRs.bed').getVal().countLines()} DMRs"
+    } else {
+      log.info "[$workflow.complete] >> MethylScore finished with ERRORS after $workflow.duration"
+    }
 }
