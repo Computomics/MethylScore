@@ -12,11 +12,12 @@ jobs:
   CI:
     env:
       NXF_VER: ${{ matrix.nxf_ver }}
+      NXF_ANSI_LOG: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
         nxf_ver: ["20.01.0", ""]
-        mode: ['--SAMPLE_SHEET https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/samplesheet.tsv', '--SAMPLE_SHEET https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/samplesheet_bedGraph.tsv --BEDGRAPH']
+        mode: ['', '--BEDGRAPH']
     steps:
       - uses: actions/checkout@v2
 
