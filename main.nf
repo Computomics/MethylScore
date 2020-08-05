@@ -85,7 +85,7 @@ if( params.AUTOTRIM && !params.BEDGRAPH ){
 roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
 hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfExists: true).collect() : file('null')
 
-// Create a channel for contexts to be analysed. Set to 'combined' if DMRS_PER_CONTEXT = false, because this is what dmrs-contexts expects
+// Create a channel for contexts to be analysed. tuple to 'combined' if DMRS_PER_CONTEXT = false, because this is what dmrs-contexts expects
 DMRcontexts = params.DMRS_PER_CONTEXT ? Channel.from(params.DMR_CONTEXTS.tokenize(',')) : Channel.from('combined')
 
 /*
@@ -100,7 +100,7 @@ Channel
 
 /*
  * Create a Channel for the tsv file containing samples
- * Store entries in a map first, then subset to arrays
+ * Store entries in a map first, then subtuple to arrays
  */
 
 Channel
@@ -120,7 +120,7 @@ inputMap
   .groupTuple()
   .tap { samples }
   .map { record -> tuple( record[0], sampleIndex++ ) }
-  .set{ indexedSamples }
+  .set { indexedSamples }
 
 (samples_bam, samples_bedGraph) = !params.BEDGRAPH ? [ samples, Channel.empty() ] : [ Channel.empty(), samples ]
 
@@ -133,10 +133,10 @@ process MethylScore_mergeReplicates {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), file(bamFile) from samples_bam
+    tuple val(sampleID), path(bamFile) from samples_bam
 
     output:
-    set val(sampleID), file('*.bam') into mergedSamples
+    tuple val(sampleID), path('*.bam') into mergedSamples
 
     when:
     !params.BEDGRAPH
@@ -167,11 +167,11 @@ if( params.DO_DEDUP ) {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), file(bamFile) from mergedSamples
+    tuple val(sampleID), path(bamFile) from mergedSamples
 
     output:
-    set val(sampleID), file('*dedup.bam') into (dedup, read_stats)
-    file ('dedup.metrics.txt')
+    tuple val(sampleID), path('*dedup.bam') into (dedup, read_stats)
+    path('dedup.metrics.txt')
 
     when:
     !params.BEDGRAPH
@@ -200,11 +200,11 @@ process MethylScore_readStatistics {
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
-    set val(sampleID), file(bamFile) from read_stats
-    file(ROIs) from roi_file
+    tuple val(sampleID), path(bamFile) from read_stats
+    path(ROIs) from roi_file
 
     output:
-    file ('*') into stats
+    path('*') into stats
 
     when:
     params.STATISTICS && !params.BEDGRAPH
@@ -224,13 +224,13 @@ process MethylScore_splitBams {
        saveAs: {filename -> filename.endsWith(".svg") ? "mbias/$filename" : "${sampleID}/split/${chromosomeID}/${filename}"}
 
     input:
-    set val(sampleID), file(bamFile) from dedup.mix(samples_bedGraph)
-    each file(fasta) from fasta_split
+    tuple val(sampleID), path(bamFile) from dedup.mix(samples_bedGraph)
+    each path(fasta) from fasta_split
 
     output:
-    set val(sampleID), file("${sampleID}.{${chromosomeID}.bam,allC}"), val(chromosomeID) into chrSplit
-    set val(sampleID), stdout, val(chromosomeID) optional true into mbias
-    file('*.svg') optional true into mbias_plots
+    tuple val(sampleID), path("${sampleID}.{${chromosomeID}.bam,allC}"), val(chromosomeID) into chrSplit
+    tuple val(sampleID), stdout, val(chromosomeID) optional true into mbias
+    path('*.svg') optional true into mbias_plots
 
     script:
     chromosomeID = fasta.baseName
@@ -262,11 +262,11 @@ process MethylScore_callConsensus {
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
     input:
-    set val(sampleID), val(chromosomeID), file(splitBam), val(mbias) from bamSplit.combine(mbias, by:[0,2])
-    file(fasta) from fasta_consensus.collect()
+    tuple val(sampleID), val(chromosomeID), path(splitBam), val(mbias) from bamSplit.combine(mbias, by:[0,2])
+    path(fasta) from fasta_consensus.collect()
 
     output:
-    set val(sampleID), file('*.allC'), val(chromosomeID) into allC
+    tuple val(sampleID), path('*.allC'), val(chromosomeID) into allC
 
     when:
     !params.BEDGRAPH
@@ -296,19 +296,19 @@ indexedSamples
  .tap { indexedSamples_matrix; indexedSamples_callMRs; indexedSamples_splitMRs; indexedSamples_callDMRs; indexedSamples_mergeDMRs }
  .combine(consensus, by: 0)
  .groupTuple(by: 3)
- .set {pile}
+ .set { pile }
 
 process MethylScore_chromosomalmatrix {
     tag "${chromosomeID}"
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
 
     input:
-    set val(sampleID), val(Index), file(consensus), val(chromosomeID) from pile
-    file(fasta) from fasta_matrix.collect()
-    file(samples) from indexedSamples_matrix.collectFile(){ record -> [ "samples.tsv", record[0] + '\t' + record[0] + '.allC' + '\n' ] }.collect()
+    tuple val(sampleID), val(Index), path(consensus), val(chromosomeID) from pile
+    path(fasta) from fasta_matrix.collect()
+    path(samples) from indexedSamples_matrix.collectFile(){ record -> [ "samples.tsv", record[0] + '\t' + record[0] + '.allC' + '\n' ] }.collect()
 
     output:
-    file("${chromosomeID}.genome_matrix.tsv") into splitMatrix
+    path("${chromosomeID}.genome_matrix.tsv") into splitMatrix
 
     script:
     """
@@ -328,14 +328,14 @@ process MethylScore_callMRs {
     publishDir "${params.PROJECT_FOLDER}/04MRs/${sample.getAt(0)}", mode: 'copy'
 
     input:
-    file(matrixWG) from matrixWG_MRs
+    path(matrixWG) from matrixWG_MRs
     each sample from indexedSamples_callMRs
-    file(parameters) from hmm_params_file
+    path(parameters) from hmm_params_file
 
     output:
-    file("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_splitting)
-    file("${sample.getAt(0)}.hmm_params") optional true into hmm_params
-    file("${sample.getAt(0)}.MR_stats.tsv") into MR_stats
+    path("${sample.getAt(0)}.MRs.bed") into (MRs_igv, MRs_splitting)
+    path("${sample.getAt(0)}.hmm_params") optional true into hmm_params
+    path("${sample.getAt(0)}.MR_stats.tsv") into MR_stats
 
     script:
     def HUMAN = params.HUMAN ? "-human" : ""
@@ -366,11 +366,11 @@ process MethylScore_igv {
     publishDir "${params.PROJECT_FOLDER}/igv", mode: 'copy'
 
     input:
-    file(bed) from MRs_igv.collect()
-    file(matrixWG) from matrixWG_igv
+    path(bed) from MRs_igv.collect()
+    path(matrixWG) from matrixWG_igv
 
     output:
-    file('methinfo.igv') into igv
+    path('methinfo.igv') into igv
 
     when:
     params.IGV
@@ -387,11 +387,11 @@ process MethylScore_splitMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
 
     input:
-    file(samples) from indexedSamples_splitMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
-    file(MRfile) from MRs_splitting.collect()
+    path(samples) from indexedSamples_splitMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
+    path(MRfile) from MRs_splitting.collect()
 
     output:
-    file('MRbatch*') into MRchunks mode flatten
+    path('MRbatch*') into MRchunks mode flatten
 
     script:
     """
@@ -404,14 +404,14 @@ process MethylScore_callDMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
-    file(matrixWG) from matrixWG_DMRs
-    file(samples) from indexedSamples_callDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }.collect()
-    each file(chunk) from MRchunks
+    path(matrixWG) from matrixWG_DMRs
+    path(samples) from indexedSamples_callDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }.collect()
+    each path(chunk) from MRchunks
     each context from DMRcontexts
 
     output:
-    file('*/*.bed') optional true into bedFiles
-    set val(context), file('*/*.dif') optional true into segmentFiles
+    path('*/*.bed') optional true into bedFiles
+    tuple val(context), path('*/*.dif') optional true into segmentFiles
 
     script:
     def cluster_min_meth = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH : params."CLUSTER_MIN_METH_${context}"
@@ -445,11 +445,11 @@ process MethylScore_mergeDMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
-    file(segments) from segmentFiles.collectFile(name: { it[0] })
-    file(samples) from indexedSamples_mergeDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }.collect()
+    path(segments) from segmentFiles.collectFile(name: { it[0] })
+    path(samples) from indexedSamples_mergeDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }.collect()
 
     output:
-    file('*.bed') into DMRs
+    path('*.bed') into DMRs
 
     script:
     def context = segments.name
@@ -474,4 +474,12 @@ process MethylScore_mergeDMRs {
 
     sort -k1,1V -k2,2n -o DMRs.${context}.bed DMRs.${context}.bed
     """
+}
+
+workflow.onComplete {
+    if ( workflow.success ) {
+      log.info "[$workflow.complete] >> MethylScore finished SUCCESSFULLY after $workflow.duration and found ${DMRs.collectFile(name: 'allDMRs.bed').getVal().countLines()} DMRs"
+    } else {
+      log.info "[$workflow.complete] >> MethylScore finished with ERRORS after $workflow.duration"
+    }
 }
