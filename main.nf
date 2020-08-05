@@ -453,20 +453,24 @@ process MethylScore_mergeDMRs {
 
     script:
     def context = segments.name
-    def cluster_min_meth = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH : params."CLUSTER_MIN_METH_${context}"
-
     """
-    python ${baseDir}/bin/pv2qv.py ${segments} ${segments}.qv
+    cat <<EOF >> parameters.config
+    PYTHON_PATH:  "python"
+    SCRIPT_PATH: "${baseDir}/bin"
+    FDR_CUTOFF: ${params.FDR_CUTOFF}
+    CLUSTER_MIN_METH_CG:  ${params.CLUSTER_MIN_METH_CG}
+    CLUSTER_MIN_METH_CHG: ${params.CLUSTER_MIN_METH_CHG}
+    CLUSTER_MIN_METH_CHH: ${params.CLUSTER_MIN_METH_CHH}
+    DMR_MIN_C:  ${params.DMR_MIN_C}
+    HDMR_FOLD_CHANGE: ${params.HDMR_FOLD_CHANGE}
+    EOF
 
     perl ${baseDir}/bin/merge_DMRs-contexts.pl \\
      ${samples} \\
-     ${segments}.qv \\
-     ${context} \\
+     ${segments} \\
      . \\
-     ${params.FDR_CUTOFF} \\
-     ${cluster_min_meth} \\
-     ${params.DMR_MIN_C} \\
-     ${params.HDMR_FOLD_CHANGE}
+     parameters.config \\
+     ${context}
 
     sort -k1,1V -k2,2n -o DMRs.${context}.bed DMRs.${context}.bed
     """
