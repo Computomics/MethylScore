@@ -85,7 +85,7 @@ if( params.AUTOTRIM && !params.BEDGRAPH ){
 roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
 hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfExists: true).collect() : file('null')
 
-// Create a channel for contexts to be analysed. tuple to 'combined' if DMRS_PER_CONTEXT = false, because this is what dmrs-contexts expects
+// Create a channel for contexts to be analysed. Set to 'combined' if DMRS_PER_CONTEXT = false, because this is what dmrs-contexts expects
 DMRcontexts = params.DMRS_PER_CONTEXT ? Channel.from(params.DMR_CONTEXTS.tokenize(',')) : Channel.from('combined')
 
 /*
@@ -100,7 +100,7 @@ Channel
 
 /*
  * Create a Channel for the tsv file containing samples
- * Store entries in a map first, then subtuple to arrays
+ * Store entries in a map first, then subset to arrays
  */
 
 Channel

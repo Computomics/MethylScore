@@ -1,7 +1,6 @@
-[![Build Status](https://travis-ci.com/Gregor-Mendel-Institute/MethylScore-nf.svg?token=RozNRzpisdeKpeAjRY7S&branch=master)](https://travis-ci.com/Gregor-Mendel-Institute/MethylScore-nf)
+![Integration test](https://github.com/Gregor-Mendel-Institute/MethylScore-nf/workflows/Integration%20test/badge.svg?branch=dev)
+![Docker Container](https://github.com/Gregor-Mendel-Institute/MethylScore-nf/workflows/Docker%20Container/badge.svg?branch=dev)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A520.01.0-brightgreen.svg)](https://www.nextflow.io/)
-[![Docker Container available](https://img.shields.io/docker/automated/beckerlab/methylscore.svg)](https://hub.docker.com/r/beckerlab/methylscore/)
-
 # MethylScore-nf
 A [nextflow](https://www.nextflow.io/) implementation of Computomics' MethylScore pipeline
 
