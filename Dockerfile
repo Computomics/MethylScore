@@ -5,7 +5,7 @@ LABEL authors="patrick.huether@gmi.oeaw.ac.at" \
 
 #Install dependencies
 RUN apt-get update 
-RUN apt-get install -y build-essential procps libgsl-dev perl cpanminus
+RUN apt-get install -y build-essential procps graphviz libgsl-dev perl cpanminus
 RUN apt-get clean -y
 
 COPY environment.yaml /
