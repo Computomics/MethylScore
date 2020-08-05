@@ -45,14 +45,19 @@ nextflow run Gregor-Mendel-Institute/MethylScore-nf -params-file=/path/to/config
 
 ## Profiles
 There are three profiles which use different methods to (automatically) resolve external pipeline dependencies.
-Note that you have to provide one of them with the `-profile` flag, in addition to the cluster specific profile.
+Note that you have to provide one of them with the `-profile` flag.
 
-### Singularity
+### Singularity `-profile singularity`
 The Singularity profile uses a [prebuilt docker container](https://hub.docker.com/r/beckerlab/methylscore/) that includes all dependencies needed to run the pipeline.
-To run on CBE, you have to specify `-profile cbe,singularity`
 
-### Docker or Podman
+### Docker or Podman `-profile docker` or `-profile podman`
 While these are very similar to the Singularity profile, they are usually not available in Cluster environments.
 They are nevertheless very useful for local runs of the pipeline.
 
 Note: with `-profile local,docker` `-profile local,podman` you can easily run the pipeline on your local computer, given you have nextflow and Docker or Podman installed.
+
+### Cluster specific profiles
+
+#### CBE `-profile cbe`
+This profile is optimized for the CLIP Batch Environment (CBE) at the Vienna BioCenter and uses `singularity` by default. Enable with `-profile cbe`.
+
