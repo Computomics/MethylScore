@@ -235,6 +235,9 @@ my $DEBUG = 0;
 # Get chromosome order:
 my $chrs   = `$tabix_exec -l $matrixfile`;
 my @chroms = split"\n", $chrs;
+my %chroms = ();
+my $c=0; foreach my $chr (@chroms) { $chroms{$chr} = $c++; }
+
 foreach my $chr (@chroms) {
 
     # Go to next chr if there is no MR on $chr:
@@ -362,6 +365,13 @@ print "OPENING SEGMENT $chr:$pos-\n" if ($DEBUG);
                     else {
                       ### NO SUCCESS - upstream segment had insufficient coverage
                       ### ----------
+
+                      # we're at the end of a chrom:
+                      if ($chr ne $m[0]) {
+                          $pos = $end_of_MRblock;
+                          pop @segments;
+                          last;
+                      }
 
                       # adjust start position if user-defined max. low-cov region length exceeded:
                       $segments[-1]{"start"} = $adj_start;
@@ -663,14 +673,21 @@ print "   M:" . join(" ", sort{$a<=>$b} keys %M) . "\n" if ($DEBUG);
         # 1. we are not yet at pos (first while)
         # 2. $start or $pos is not in the focal context -> grab next pos in the correct context
         #    (second while)
+        # 3. we are already too far in the matrix (other chrom)
 print "(1) m0: " . $m[0] . " m1: " . $m[1] . " $m[2] pos $chr : $pos\n" if ($DEBUG);
+
+        if ($chroms{$chr} < $chroms{$m[0]}) {
+            # (3.) we are already too far in the matrix (other chrom)
+            print "   -> pass 0 (no pos in context in matrix anymore)\n" if ($DEBUG);
+            return(0, \%sites_per_sample, \%rates_per_sample);
+        }
 
         my $prev_mchr = $m[0];
         my $prev_mpos = $m[1];
         if ($chr ne $m[0] ||
             ($chr eq $m[0] && $m[1] < $pos))
         {
-            # We have never been in segment before -> iterate in matrix to the segment
+            # (1.) We have never been in segment before -> iterate in matrix to the segment
             do {
                 $mline = <$Mfile>;
                 chomp $mline;
@@ -680,7 +697,7 @@ print "(1) m0: " . $m[0] . " m1: " . $m[1] . " $m[2] pos $chr : $pos\n" if ($DEB
 
 print "(2) m0: " . $m[0] . " m1: " . $m[1] . " $m[2] pos: $chr : $pos\n" if ($DEBUG);
 
-            # We're in, but is the context also correct? If not, iterate further
+            # (2.) We're in, but is the context also correct? If not, iterate further
             while ($m[2] ne $context && $context ne "combined") {
                 $mline = <$Mfile>;
                 chomp $mline;
