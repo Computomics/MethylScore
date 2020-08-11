@@ -225,8 +225,7 @@ process MethylScore_splitBams {
     tuple val(sampleID), path("${sampleID}.{${chromosomeID}.bam,meth}"), val(chromosomeID) into chrSplit
 
     script:
-    def chromosomeID = fasta.baseName
-    def compressed = bamFile.name.endsWith(".gz") ? 'zcat' : 'cat'
+    chromosomeID = fasta.baseName
 
     if (!params.BEDGRAPH)
       """
@@ -237,7 +236,7 @@ process MethylScore_splitBams {
       """
     else
       """
-      ${compressed} ${bamFile} | awk '\$1 == "${chromosomeID}"' > ${sampleID}.${chromosomeID}.meth
+      cat ${bamFile} | awk '\$1 == "${chromosomeID}"' > ${sampleID}.${chromosomeID}.meth
       """
 }
 
