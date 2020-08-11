@@ -240,8 +240,6 @@ process MethylScore_splitBams {
       """
 }
 
-//(bamSplit, bedSplit) = !params.BEDGRAPH ? [ chrSplit, Channel.empty() ] : [ Channel.empty(), chrSplit ]
-
 process MethylScore_callConsensus {
     tag "$sampleID:$chromosomeID"
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
@@ -267,15 +265,13 @@ process MethylScore_callConsensus {
       ${chromosomeID}.fa \\
       ${splitChrom}
 
-      LC_ALL=C sort -k2,2n <(tail -n+2 -q *bedGraph) | awk '{print "${sampleID}\\t"\$0}' > ${sampleID}.allC
+      sort -k2,2n <(tail -n+2 -q *bedGraph) | awk '{print "${sampleID}\\t"\$0}' > ${sampleID}.allC
       """
     else
       """
-      LC_ALL=C sort -k2,2n ${splitChrom} | awk '{print "${sampleID}\\t"\$0}' > ${sampleID}.allC
+      sort -k2,2n ${splitChrom} | awk '{print "${sampleID}\\t"\$0}' > ${sampleID}.allC
       """   
 }
-
-//consensus = !params.BEDGRAPH ? allC : bedSplit
 
 indexedSamples
  .tap { indexedSamples_matrix; indexedSamples_callMRs; indexedSamples_splitMRs; indexedSamples_callDMRs; indexedSamples_mergeDMRs }
@@ -298,7 +294,7 @@ process MethylScore_chromosomalmatrix {
     script:
     def input_format = params.METHYLPY ? "methylpy" : "bismark" 
     """
-    LC_ALL=C sort --parallel=${task.cpus} -m -k3,3g -T . ${consensus} > merged.tsv
+    sort --parallel=${task.cpus} -m -k3,3g -T . ${consensus} > merged.tsv
     perl ${baseDir}/bin/generate_genome_matrix.pl \\
      -s ${samples} \\
      -f merged.tsv \\
