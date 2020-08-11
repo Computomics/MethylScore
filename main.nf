@@ -37,7 +37,6 @@ GENOME                    : ${params.GENOME}
 SAMPLE_SHEET              : ${params.SAMPLE_SHEET}
 ------------------------------------------------------------------------------------------------------------------------------------
 BEDGRAPH                  : ${params.BEDGRAPH}
-AUTOTRIM                  : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.AUTOTRIM }
 DO_DEDUP                  : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.DO_DEDUP }
 STATISTICS                : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.STATISTICS }
 HUMAN                     : ${params.HUMAN}
@@ -61,8 +60,8 @@ DMR_MIN_C                 : ${params.DMR_MIN_C}
 DMR_MIN_COV               : ${params.DMR_MIN_COV}
 FDR_CUTOFF                : ${params.FDR_CUTOFF}
 HDMR_FOLD_CHANGE          : ${params.HDMR_FOLD_CHANGE}
-IGNORE_OT                 : ${params.AUTOTRIM || params.BEDGRAPH ? "ignored (AUTOTRIM or BEDGRAPH = ${params.AUTOTRIM || params.BEDGRAPH})" : params.IGNORE_OT}
-IGNORE_OB                 : ${params.AUTOTRIM || params.BEDGRAPH ? "ignored (AUTOTRIM or BEDGRAPH = ${params.AUTOTRIM || params.BEDGRAPH})" : params.IGNORE_OB}
+IGNORE_OT                 : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.IGNORE_OT}
+IGNORE_OB                 : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.IGNORE_OB}
 MERGE_DIST                : ${params.MERGE_DIST}
 MIN_COVERAGE              : ${params.MIN_COVERAGE}
 MIN_QUAL                  : ${params.BEDGRAPH ? "ignored (BEDGRAPH = ${params.BEDGRAPH})" : params.MIN_QUAL }
@@ -77,10 +76,6 @@ TRIM_METHRATE             : ${params.TRIM_METHRATE}
 Config Profile : ${workflow.profile}
 ====================================================================================================================================
 """.stripIndent()
-
-if( params.AUTOTRIM && !params.BEDGRAPH ){
- log.warn "MethylScore is running in AUTOTRIM mode. Please review mbias plots in ${params.PROJECT_FOLDER}/01mappings/mbias and adjust IGNORE_OT and IGNORE_OB settings if necessary"
-}
 
 roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
 hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfExists: true).collect() : file('null')
@@ -220,20 +215,18 @@ process MethylScore_readStatistics {
 
 process MethylScore_splitBams {
     tag "$sampleID:$chromosomeID"
-    publishDir "${params.PROJECT_FOLDER}/01mappings", mode: 'copy',
-       saveAs: {filename -> filename.endsWith(".svg") ? "mbias/$filename" : "${sampleID}/split/${chromosomeID}/${filename}"}
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${chromosomeID}/", mode: 'copy'
 
     input:
     tuple val(sampleID), path(bamFile) from dedup.mix(samples_bedGraph)
     each path(fasta) from fasta_split
 
     output:
-    tuple val(sampleID), path("${sampleID}.{${chromosomeID}.bam,allC}"), val(chromosomeID) into chrSplit
-    tuple val(sampleID), stdout, val(chromosomeID) optional true into mbias
-    path('*.svg') optional true into mbias_plots
+    tuple val(sampleID), path("${sampleID}.{${chromosomeID}.bam,meth}"), val(chromosomeID) into chrSplit
 
     script:
-    chromosomeID = fasta.baseName
+    def chromosomeID = fasta.baseName
+    def compressed = bamFile.name.endsWith(".gz") ? 'zcat' : 'cat'
 
     if (!params.BEDGRAPH)
       """
@@ -241,56 +234,49 @@ process MethylScore_splitBams {
       cat <(samtools view -H ${bamFile} | grep -E '@HD|${chromosomeID}') \\
           <(samtools view ${bamFile} ${chromosomeID}) | \\
           samtools view -bo ${sampleID}.${chromosomeID}.bam -
-
-      MethylDackel mbias \\
-          --CHH \\
-          --CHG \\
-          ${chromosomeID}.fa \\
-          ${sampleID}.${chromosomeID}.bam \\
-          ${sampleID}.${chromosomeID} 2> >(tail -n1 | cut -d: -f2) > /dev/null
       """
     else
       """
-      awk '\$1 == "${chromosomeID}"' ${bamFile} | sort -k2,2n > ${sampleID}.allC
+      ${compressed} ${bamFile} | awk '\$1 == "${chromosomeID}"' > ${sampleID}.${chromosomeID}.meth
       """
 }
 
-(bamSplit, bedSplit) = !params.BEDGRAPH ? [ chrSplit, Channel.empty() ] : [ Channel.empty(), chrSplit ]
+//(bamSplit, bedSplit) = !params.BEDGRAPH ? [ chrSplit, Channel.empty() ] : [ Channel.empty(), chrSplit ]
 
 process MethylScore_callConsensus {
     tag "$sampleID:$chromosomeID"
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
     input:
-    tuple val(sampleID), val(chromosomeID), path(splitBam), val(mbias) from bamSplit.combine(mbias, by:[0,2])
+    tuple val(sampleID), val(chromosomeID), path(splitChrom) from chrSplit
     path(fasta) from fasta_consensus.collect()
 
     output:
-    tuple val(sampleID), path('*.allC'), val(chromosomeID) into allC
-
-    when:
-    !params.BEDGRAPH
+    tuple val(sampleID), path('*.allC'), val(chromosomeID) into consensus
 
     script:
-    def trim = params.AUTOTRIM ? "${mbias.trim()}" : "--nOT ${params.IGNORE_OT} --nOB ${params.IGNORE_OB}" 
+    if (!params.BEDGRAPH)
+      """
+      MethylDackel extract \\
+      --CHH \\
+      --CHG \\
+      --nOT ${params.IGNORE_OT} --nOB ${params.IGNORE_OB} \\
+      -p ${params.MIN_QUAL} \\
+      --minOppositeDepth=1 \\
+      --maxVariantFrac=0.01 \\
+      --keepDupes \\
+      ${chromosomeID}.fa \\
+      ${splitChrom}
 
-    """
-    MethylDackel extract \\
-     --CHH \\
-     --CHG \\
-     ${trim} \\
-     -p ${params.MIN_QUAL} \\
-     --minOppositeDepth=1 \\
-     --maxVariantFrac=0.01 \\
-     --keepDupes \\
-     ${chromosomeID}.fa \\
-     ${splitBam}
-
-    tail -n+2 -q *bedGraph | sort -k2,2n > ${sampleID}.allC
-    """
+      LC_ALL=C sort -k2,2n <(tail -n+2 -q *bedGraph) | awk '{print "${sampleID}\\t"\$0}' > ${sampleID}.allC
+      """
+    else
+      """
+      LC_ALL=C sort -k2,2n ${splitChrom} | awk '{print "${sampleID}\\t"\$0}' > ${sampleID}.allC
+      """   
 }
 
-consensus = !params.BEDGRAPH ? allC : bedSplit
+//consensus = !params.BEDGRAPH ? allC : bedSplit
 
 indexedSamples
  .tap { indexedSamples_matrix; indexedSamples_callMRs; indexedSamples_splitMRs; indexedSamples_callDMRs; indexedSamples_mergeDMRs }
@@ -311,10 +297,13 @@ process MethylScore_chromosomalmatrix {
     path("${chromosomeID}.genome_matrix.tsv") into splitMatrix
 
     script:
+    def input_format = params.METHYLPY ? "methylpy" : "bismark" 
     """
+    LC_ALL=C sort -m -T . ${consensus} > merged.tsv
     perl ${baseDir}/bin/generate_genome_matrix.pl \\
      -s ${samples} \\
-     -i bismark -r ${chromosomeID}.fa \\
+     -f merged.tsv \\
+     -i ${input_format} -r ${chromosomeID}.fa \\
      -o ${chromosomeID}.genome_matrix.tsv
     """
 }
