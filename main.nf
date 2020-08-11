@@ -222,7 +222,7 @@ process MethylScore_splitBams {
     each path(fasta) from fasta_split
 
     output:
-    tuple val(sampleID), path("${sampleID}.{${chromosomeID}.bam,meth}"), val(chromosomeID) into chrSplit
+    tuple val(sampleID), path("${sampleID}.${chromosomeID}.split"), val(chromosomeID) into chrSplit
 
     script:
     chromosomeID = fasta.baseName
@@ -232,11 +232,11 @@ process MethylScore_splitBams {
       samtools index ${bamFile}
       cat <(samtools view -H ${bamFile} | grep -E '@HD|${chromosomeID}') \\
           <(samtools view ${bamFile} ${chromosomeID}) | \\
-          samtools view -bo ${sampleID}.${chromosomeID}.bam -
+          samtools view -bo ${sampleID}.${chromosomeID}.split -
       """
     else
       """
-      cat ${bamFile} | awk '\$1 == "${chromosomeID}"' > ${sampleID}.${chromosomeID}.meth
+      cat ${bamFile} | awk '\$1 == "${chromosomeID}"' > ${sampleID}.${chromosomeID}.split
       """
 }
 
@@ -247,7 +247,7 @@ process MethylScore_callConsensus {
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
     input:
-    tuple val(sampleID), val(chromosomeID), path(splitChrom) from chrSplit
+    tuple val(sampleID), path(splitChrom), val(chromosomeID) from chrSplit
     path(fasta) from fasta_consensus.collect()
 
     output:
@@ -298,7 +298,7 @@ process MethylScore_chromosomalmatrix {
     script:
     def input_format = params.METHYLPY ? "methylpy" : "bismark" 
     """
-    LC_ALL=C sort -m -T . ${consensus} > merged.tsv
+    LC_ALL=C sort --parallel=${task.cpus} -m -k3,3g -T . ${consensus} > merged.tsv
     perl ${baseDir}/bin/generate_genome_matrix.pl \\
      -s ${samples} \\
      -f merged.tsv \\
