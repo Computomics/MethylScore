@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>MethylScore</title>
+        <style>
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="methylscore">MethylScore</h1>
+<p>version 0.1.17</p>
+<hr>
+<p>Pipeline to call differential methylation simultaneously between multiple samples using next-gen sequencing data.</p>
+<h2 id="installation">Installation</h2>
+<p>Requirements:</p>
+<ul>
+<li>perl &gt;= 5.14 (for older versions, see section <a href="#Older-perl-versions">Older perl versions</a>)</li>
+<li>perl packages: <code>bash install/install_perl_packages.sh</code></li>
+<li>python &gt;= 3
+<ul>
+<li>packages scipy and argparse</li>
+</ul>
+</li>
+</ul>
+<h3 id="binaries">Binaries</h3>
+<p>There are pre-compiled binaries for Ubuntu bionic 18.04 in the folder <code>bin/</code>.</p>
+<h3 id="from-source">From Source</h3>
+<p>For now, perl scripts have to be compiled (<code>src/*pl</code>), and a C++ program for the MR detection has to be compiled (<code>src/hmm_mrs</code>).</p>
+<p>You need to have installed:</p>
+<ul>
+<li>perl package <code>PAR::Packer</code> (it is included in the install script <code>install/install_perl_packages.sh</code>)</li>
+<li>g++</li>
+</ul>
+<p>Compile perl scripts and C++ program by:</p>
+<ul>
+<li>executing <code>compile.sh</code> in the main folder</li>
+</ul>
+<h3 id="older-perl-versions">Older perl versions</h3>
+<p>For perl versions &lt; 5.14:</p>
+<ul>
+<li>install perlbrew by executing <code>install/install_perlbrew.sh</code></li>
+<li>set the flag <code>use_perlbrew</code> in the MethylScore binary file <code>MethylScore</code> to 1, so that line 4 looks like:<br>line 4: <code>use_perlbrew=1</code><br> (for <code>MethylScore-contexts</code> accordingly)</li>
+</ul>
+<h2 id="manual">Manual</h2>
+<p>See in <code>docs/MethylScore_manual.pdf</code></p>
+<p>TODO: Manual does not yet include sequence context specific calling of DMRs.</p>
+<h2 id="license">LICENSE</h2>
+<p>Licensed under the Non-Profit Open Software License version 3.0</p>
+<p>See the file <code>LICENSE</code> for the complete license.</p>
+
+    </body>
+    </html>

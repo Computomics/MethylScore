@@ -1,0 +1,12 @@
+\contentsline {section}{\numberline {}MethylScore strategy}{4}{section.1}
+\contentsline {subsection}{\numberline {\#1.1}MR calling strategy}{4}{subsection.1.1}
+\contentsline {subsection}{\numberline {\#1.2}DMR calling strategy}{6}{subsection.1.2}
+\contentsline {section}{\numberline {}Running MethylScore}{8}{section.2}
+\contentsline {subsection}{\numberline {\#2.1}Prerequisites}{8}{subsection.2.1}
+\contentsline {subsection}{\numberline {\#2.2}Folder structure}{9}{subsection.2.2}
+\contentsline {subsection}{\numberline {\#2.3}Input}{9}{subsection.2.3}
+\contentsline {subsection}{\numberline {\#2.4}Output file formats}{10}{subsection.2.4}
+\contentsline {subsection}{\numberline {\#2.5}Performance recommendations}{13}{subsection.2.5}
+\contentsline {subsection}{\numberline {\#2.6}Command line parameters}{13}{subsection.2.6}
+\contentsline {subsection}{\textbf {Quick Usage}}{13}{subsection.2.6}
+\contentsline {subsection}{\numberline {\#2.7}License}{17}{subsection.2.7}

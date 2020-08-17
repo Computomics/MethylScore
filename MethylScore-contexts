@@ -1,0 +1,38 @@
+#!/bin/bash
+set -e
+
+use_perlbrew=0
+
+
+# PAR_TEMP or PAR_GLOBAL_TMPDIR are the temporary dirs
+# for unpacking the files from the pp packager.
+# We set them to a tmp folder in the MethylScore bin dir:
+dir=$(dirname $0)
+if [ ! -e "$dir/tmp" ]; then mkdir -p $dir/tmp; fi
+export PAR_TEMP="$dir/tmp"
+export PAR_GLOBAL_TMPDIR="$dir/tmp"
+
+if [ $use_perlbrew -eq 1 ]; then
+	# Make sure to use a perl version >= 5.14, we chose 5.22.3
+	# from perlbrew, check if it is working:
+	which perlbrew 2> /dev/null > /dev/null
+	if [ $? -ne 0 ]; then 
+		>&2 echo "perlbrew not found!"
+		exit 1
+	fi
+	perlbrew switch perl-5.22.3
+	if [ $? -ne 0 ]; then 
+		>&2 echo "perlbrew cannot switch to perl-5.22.3!"
+		exit 1
+	fi
+	source $PERLBREW_ROOT/etc/bashrc
+	if [ `perl -v | grep 5.22.3 | wc -l` -eq 0 ]; then 
+		>&2 echo "perl version 5.22.3 is not set!"
+		exit 1
+	fi
+fi
+
+# and then call MethylScore with all arguments passed-through:
+#$dir/bin.Ubuntu16.04/MethylScore $@
+$dir/bin/MethylScore-contexts $@
+

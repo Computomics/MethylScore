@@ -1,0 +1,3 @@
+S1  PE  data/S1.bam data/ref.fasta
+S2  PE  data/S2.bam
+S3  SE  data/S3.bam

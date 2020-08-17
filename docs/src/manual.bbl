@@ -1,0 +1,23 @@
+\begin{thebibliography}{3}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{}
+
+\bibitem[{Hagmann et~al.(2015)Hagmann, Becker, M{\"u}ller et~al.}]{Hagmann2015}
+Hagmann J, Becker C, M{\"u}ller J, et~al. (2015) Century-scale methylome
+  stability in a recently diverged arabidopsis thaliana lineage. \emph{PLoS
+  genetics} \textbf{11}(1):e1004920.
+
+\bibitem[{Molaro et~al.(2011)Molaro, Hodges, Fang, Song, McCombie, Hannon, and
+  Smith}]{Molaro2011}
+Molaro A, Hodges E, Fang F, Song Q, McCombie WR, Hannon GJ, Smith AD (2011)
+  Sperm methylation profiles reveal features of epigenetic inheritance and
+  evolution in primates. \emph{Cell} \textbf{146}(6):1029--1041.
+
+\bibitem[{Pedersen et~al.(2014)Pedersen, Eyring, De, Yang, and
+  Schwartz}]{bwa_meth}
+Pedersen BS, Eyring K, De S, Yang IV, Schwartz DA (2014) Fast and accurate
+  alignment of long bisulfite-seq reads. \emph{arXiv preprint arXiv:1401.1129}
+  .
+
+\end{thebibliography}
