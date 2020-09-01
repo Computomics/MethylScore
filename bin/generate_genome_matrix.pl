@@ -292,12 +292,15 @@ while (1) {
 		$strand{$pos} = $a[3];
 	}
 	elsif ($iformat eq "methylpy") {
-			$strand{$pos} = ($a[3] eq "+") ? "C" : "G";
-			if ($strand{$pos} ne substr($REF{$chr}, $pos-1, 1)) {
-				$skipped_sites++;
-				print STDERR "Warning: position $chr:$pos does not contain C or G in reference! Skipped\n" if ($verbose);
-				next;
-			}
+			#$strand{$pos} = ($a[3] eq "+") ? "C" : "G";
+			#if ($strand{$pos} ne substr($REF{$chr}, $pos-1, 1)) {
+        $strand{$pos} = substr($REF{$chr}, $pos-1, 1);
+		
+		if ($strand{$pos} ne "C" && $strand{$pos} ne "G") {
+			$skipped_sites++;
+			print STDERR "Warning: position $chr:$pos does not contain C or G in reference! Skipped\n" if ($verbose);
+			next;
+		}
 	}
 	elsif ($iformat eq "bismark") {
                 $pos = $a[3];
