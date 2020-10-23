@@ -36,20 +36,23 @@ my $chr="";
 my $seq="";
 if ($iformat !~ m/^mx/) {
 open R,"<$reffile" or die "Cannot open $reffile\n";
-while($iformat !~ /^mx/ && <R> ) {
+while( <R> ) {
 	chomp;
 	if($_ =~ /^>/ ) {
 		if($seq ne "") {
 			$REF{$chr} = $seq;
 		}
 		$chr = substr($_,1);
+                # deal with fasta headers containing more than one word
+                $chr = (split(' ',$chr))[0];
 		$seq = "";
 	}
 	else {
 		$seq .= $_;
 	}
 }
-$REF{$chr} = $seq;
+# make sure bases are uppercase
+$REF{$chr} = uc $seq;
 close R;
 
 print STDERR "reference has been read\n" if ($verbose);
@@ -75,7 +78,7 @@ while (<F>) {
 
 	if (! -e $s[1]) { die "Cannot find $s[1]!\n"; }
 
-	if (($iformat eq "bismark" || $iformat eq "mx") && $mergedfile eq "") {
+	if (($iformat eq "bismark" || $iformat eq "mx" || $iformat eq "methylpy") && $mergedfile eq "") {
                 # print sample name into bismark input file:
 	        open FILE, "<$s[1]";
        	        my $rand = int(rand(100000));
@@ -179,7 +182,7 @@ while (1) {
 				if ($strand{$prev_pos} eq "C") {
 					# plus strand
 					my $triplet;
-					if ($iformat eq "shore" || $iformat eq "bismark") {
+					if ($iformat eq "shore" || $iformat eq "bismark" || $iformat eq "methylpy") {
 						$triplet = substr($REF{$chr}, $prev_pos-1, 3);
 					} elsif ($iformat eq "mx") {
 						$triplet = $context{$prev_pos};
@@ -211,7 +214,7 @@ while (1) {
 				else {
 					# minus strand
 					my $triplet;
-					if ($iformat eq "shore" || $iformat eq "bismark") {
+					if ($iformat eq "shore" || $iformat eq "bismark" || $iformat eq "methylpy") {
 						$triplet = substr($REF{$chr}, $prev_pos-3, 3);
 					} elsif ($iformat eq "mx") {
 						$triplet = $context{$prev_pos};
@@ -288,7 +291,19 @@ while (1) {
 	if ($iformat eq "shore") {
 		$strand{$pos} = $a[3];
 	}
+	elsif ($iformat eq "methylpy") {
+			#$strand{$pos} = ($a[3] eq "+") ? "C" : "G";
+			#if ($strand{$pos} ne substr($REF{$chr}, $pos-1, 1)) {
+        $strand{$pos} = substr($REF{$chr}, $pos-1, 1);
+		
+		if ($strand{$pos} ne "C" && $strand{$pos} ne "G") {
+			$skipped_sites++;
+			print STDERR "Warning: position $chr:$pos does not contain C or G in reference! Skipped\n" if ($verbose);
+			next;
+		}
+	}
 	elsif ($iformat eq "bismark") {
+                $pos = $a[3];
                 $strand{$pos} = substr($REF{$chr}, $pos-1, 1);
 
 		if ($strand{$pos} ne "C" && $strand{$pos} ne "G") {
@@ -369,6 +384,11 @@ while (1) {
                         $rate = sprintf("%.1f", $a[4]);
                         @support = ($a[5], $a[6]);
                 }
+		elsif ($iformat eq "methylpy") {
+                        $qual = 40;
+                        @support = ($a[5], $a[6]);
+                        $rate = sprintf("%.1f", $support[0]*100/($support[0]+$support[1]));
+                }
                 elsif ($iformat =~ /^mx/) {
                         $qual = ($strand{$pos} eq "C" ? $a[6] : $a[9]);
                         $rate = ($strand{$pos} eq "C" ? sprintf("%.1f", $a[4]*100/$a[5]) : sprintf("%.1f", $a[7]*100/$a[8]));
@@ -412,7 +432,7 @@ Generates raw genome matrix from several samples
 			* sampleID
 			* path of methylation consensus file generated
 			  by the program specified with -i
--i	STRING	Input format ('shore', 'bismark', 'mx', 'mxX', default: $iformat)
+-i	STRING	Input format ('shore', 'bismark', 'mx', 'mxX', 'methylpy' default: $iformat)
 		mx: methylExtract, mxX: methylExtract with regular seq. contexts
 -r	STRING	Genome reference fasta file (not needed for 'mx'/'mxX')
 -o	STRING	Output file
