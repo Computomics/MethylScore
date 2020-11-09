@@ -230,7 +230,7 @@ process MethylScore_splitBams {
     if (!params.BEDGRAPH)
       """
       samtools index ${bamFile}
-      cat <(samtools view -H ${bamFile} | grep -E '@HD|${chromosomeID}') \\
+      cat <(samtools view -H ${bamFile} | grep -E "@HD|SN:${chromosomeID}\$(printf '\\t')") \\
           <(samtools view ${bamFile} ${chromosomeID}) | \\
           samtools view -bo ${sampleID}.${chromosomeID}.split -
       """
@@ -371,15 +371,21 @@ process MethylScore_splitMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
 
     input:
+    path(matrixWG) from matrixWG_DMRs
     path(samples) from indexedSamples_splitMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\t' + record[0] + '.MRs.bed' + '\n' ] }
     path(MRfile) from MRs_splitting.collect()
 
     output:
     path('MRbatch*') into MRchunks mode flatten
+    path('*.gz') into compressedMatrix
+    path('*.tbi') into matrixIndex
 
     script:
     """
     perl ${baseDir}/bin/split_MRfile.pl ${samples} MRbatch ${params.MR_BATCH_SIZE}
+
+    bgzip -f --threads ${task.cpus} ${matrixWG}
+    tabix -s 1 -b 2 -e 2 ${matrixWG}.gz
     """
 }
 
@@ -388,7 +394,8 @@ process MethylScore_callDMRs {
     publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
 
     input:
-    path(matrixWG) from matrixWG_DMRs
+    path(matrixWG) from compressedMatrix.collect()
+    path(tbi) from matrixIndex.collect()
     path(samples) from indexedSamples_callDMRs.collectFile(){ record -> [ 'samples.tsv', record[0] + '\t' + (record[1]+3) + '\n' ] }.collect()
     each path(chunk) from MRchunks
     each context from DMRcontexts
