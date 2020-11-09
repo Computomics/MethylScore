@@ -118,6 +118,3 @@ IGNORE_OT : 0,0,0,0
 
 # Disregard bases of original bottom strand for consensus calling (r1_start,r1_end,r2_start,r2_end)
 IGNORE_OB : 0,0,0,0
-
-# Infer read trimming from MethylDackel mbias output (will override IGNORE_OT and IGNORE_OB settings)
-AUTOTRIM : false
