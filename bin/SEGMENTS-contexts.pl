@@ -688,12 +688,12 @@ print "(1) m0: " . $m[0] . " m1: " . $m[1] . " $m[2] pos $chr : $pos\n" if ($DEB
             ($chr eq $m[0] && $m[1] < $pos))
         {
             # (1.) We have never been in segment before -> iterate in matrix to the segment
-            do {
+            while ($chr ne $m[0] || ($chr eq $m[0] && $m[1] < $pos)) {
                 $mline = <$Mfile>;
                 chomp $mline;
-                @m = split /\t/, $mline;
-            } while ($chr ne $m[0] ||
-                    ($chr eq $m[0] && $m[1] < $pos));
+                @m = split/\t/, $mline;
+                last if ($m[1] eq "");
+            }
 
 print "(2) m0: " . $m[0] . " m1: " . $m[1] . " $m[2] pos: $chr : $pos\n" if ($DEBUG);
 
