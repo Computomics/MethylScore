@@ -1,5 +1,5 @@
-![Integration test](https://github.com/Gregor-Mendel-Institute/MethylScore-nf/workflows/Integration%20test/badge.svg?branch=dev)
-![Docker Container](https://github.com/Gregor-Mendel-Institute/MethylScore-nf/workflows/Docker%20Container/badge.svg?branch=dev)
+![Integration test](https://github.com/Computomics/MethylScore/workflows/Integration%20test/badge.svg?branch=nextflow)
+![Docker Container](https://github.com/Computomics/MethylScore/workflows/Docker%20Container/badge.svg?branch=nextflow)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A520.01.0-brightgreen.svg)](https://www.nextflow.io/)
 # MethylScore-nf
 A [nextflow](https://www.nextflow.io/) implementation of Computomics' MethylScore pipeline
@@ -20,26 +20,24 @@ module load nextflow/20.01.0
 
 To run the pipeline, you have to provide atleast `--SAMPLE_SHEET` and `--GENOME` (same as the one which you mapped the reads against)
 
-As long as the pipeline repository is private, you have to use the `-user` flag to authenticate with your Github credentials.
-
 ```bash
-nextflow run Gregor-Mendel-Institute/MethylScore-nf -user your_github_username --SAMPLE_SHEET=/path/to/samplesheet.tsv --GENOME=/path/to/reference_genome.fa -profile cbe,singularity
+nextflow run Computomics/MethylScore --SAMPLE_SHEET=/path/to/samplesheet.tsv --GENOME=/path/to/reference_genome.fa -profile cbe,singularity
 ```
 
 ## Parameters
 
-Pipeline parameters are initialized to their [default values](https://github.com/Gregor-Mendel-Institute/MethylScore-nf/raw/master/example_config.yaml).
+Pipeline parameters are initialized to their [default values](https://github.com/Computomics/MethylScore/raw/master/example_config.yaml).
 
 Individual parameters can be passed to the pipeline on the commandline. For example if you want methylated regions to be visualized as [IGV](https://software.broadinstitute.org/software/igv/) tracks:
 
 ```bash
-nextflow run Gregor-Mendel-Institute/MethylScore-nf --SAMPLE_SHEET=/path/to/samplesheet.tsv --IGV -profile cbe,singularity
+nextflow run Computomics/MethylScore --SAMPLE_SHEET=/path/to/samplesheet.tsv --IGV -profile cbe,singularity
 ```
 
-Alternatively, the repository also contains an [example_config.yaml](https://github.com/Gregor-Mendel-Institute/MethylScore-nf/raw/master/example_config.yaml), which can be used to pass custom parameters to the pipeline using the `-params-file` flag.
+Alternatively, the repository also contains an [example_config.yaml](https://github.com/Computomics/MethylScore/raw/master/example_config.yaml), which can be used to pass custom parameters to the pipeline using the `-params-file` flag.
 
 ```bash
-nextflow run Gregor-Mendel-Institute/MethylScore-nf -params-file=/path/to/config.yaml
+nextflow run Computomics/MethylScore -params-file=/path/to/config.yaml
 ```
 
 ## Profiles

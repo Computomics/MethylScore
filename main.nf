@@ -5,9 +5,10 @@
 ========================================================================================
  Nextflow implementation of Computomics' MethylScore Pipeline
  #### Homepage / Documentation
- https://github.com/Gregor-Mendel-Institute/MethylScore-nf
+ https://github.com/Computomics/MethylScore
  #### Author
- Patrick Hüther <patrick.huether@gmi.oeaw.ac.at>
+ Jörg Hagmann <joerg.hagmann@computomics.com>
+ Patrick Hüther <p.huether@lmu.de>
 ----------------------------------------------------------------------------------------
 */
 
