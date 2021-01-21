@@ -261,11 +261,6 @@ foreach my $chr (@chroms) {
     foreach my $pos (sort{$a<=>$b} keys %{$MRpos{$chr}}) {
 #$DEBUG = 1 if ($pos > 43255577);
 
-        # if in previous get_sample_coverage executions the end of a chrom 
-        # in the matrix was reached, don't look at the positions of this 
-        # chrom anymore:
-        next if ($chroms{$chr} < $chroms{$m[0]});
-
         $start_of_MRblock = $pos if ($MRfreq == 0);
 
         foreach my $MRline (@{$MRpos{$chr}{$pos}}) {
@@ -319,7 +314,7 @@ print "start of MR block $pos\n" if ($DEBUG);
             }
             else {
 print "positions: " . join(",", @positions) . "\n" if ($DEBUG);
-              push @prev_pos_to_compare, $positions[-2] if (scalar(@positions) > 1);
+              push @prev_pos_to_compare, $positions[-2];
 
               my $cmp_pos;
               if ($OPT_lookback_distance > 0) {
