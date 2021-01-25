@@ -1,7 +1,7 @@
 class ParameterChecks {
   static void checkParams(params) {
-    assert params.SAMPLE_SHEET, "samplesheet.tsv has to be specified!"
-    assert params.GENOME, "reference genome in fasta format has to be specified!"
+    assert params.SAMPLE_SHEET || params.MATRIX , "samplesheet.tsv or prebuilt genome matrix input has to be specified!"
+    assert params.GENOME|| params.MATRIX, "reference genome in fasta format or prebuilt genome matrix input has to be specified!"
     assert params.HUMAN instanceof Boolean, "HUMAN must be set to either false (off) or true (on)"
     assert params.IGV instanceof Boolean, "IGV must be set to either false (off) or true (on)"
     assert params.STATISTICS instanceof Boolean, "STATISTICS must be set to either false (off) or true (on)"

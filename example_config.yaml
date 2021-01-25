@@ -4,11 +4,17 @@
 
 ### General options
 
-# Call DMRs from bedGraph input?
+# Start from bedGraph input?
 BEDGRAPH : false
+
+# Start from genome matrix input?
+MATRIX : false
 
 # IGV output?
 IGV : true
+
+# Run pairwise comparisons (takes sampleID as input string)
+PAIRWISE : false
 
 # Reference genome in fasta format (absolute path)
 GENOME : false 
