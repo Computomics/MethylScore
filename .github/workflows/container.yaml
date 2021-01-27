@@ -1,0 +1,24 @@
+name: Build Container
+
+on:
+  push:
+    paths:
+      - 'Dockerfile'
+      - 'environment.yml'
+
+jobs:
+  push_to_registry:
+    name: Build and push to quay.io
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Login to quay.io
+        run: podman login -u ${{ secrets.REGISTRY_USER }} -p ${{ secrets.REGISTRY_PASS }} quay.io
+
+      - name: Build container
+        run: podman build --tag beckerlab/methylscore .
+
+      - name: Push container
+        run: podman push beckerlab/methylscore docker://quay.io/beckerlab/methylscore:${GITHUB_REF##*/}
