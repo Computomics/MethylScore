@@ -4,6 +4,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  - conda-forge::perl=5.28.1
+  - conda-forge::perl-app-cpanminus=1.7043
   - conda-forge::numpy=1.19.1
   - bioconda::samtools=1.9
   - bioconda::tabix=0.2.6
