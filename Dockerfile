@@ -1,5 +1,4 @@
 FROM continuumio/miniconda3
-MAINTAINER Patrick Hüther <patrick.huether@gmi.oeaw.ac.at>
 LABEL authors="patrick.huether@gmi.oeaw.ac.at" \
     description="Container image containing all dependencies for the MethylScore pipeline"
 
@@ -27,6 +26,6 @@ RUN cpanm --notest Getopt::Long \
 	List::Util \
 	Compress::BGZF::Reader
 
-RUN conda env create -f /environment.yaml && conda clean -a
+RUN conda env create -f /environment.yaml && conda clean -afy
 ENV PATH /opt/conda/envs/MethylScore/bin:$PATH
 
