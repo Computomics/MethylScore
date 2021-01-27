@@ -7,8 +7,7 @@ RUN apt-get update && apt-get install -y build-essential procps graphviz libgsl-
 
 COPY environment.yaml /
 
-RUN conda env create -f /environment.yaml && conda clean -afy && source activate MethylScore
-ENV PATH /opt/conda/envs/MethylScore/bin:$PATH
+RUN conda env update -n base -f environment.yaml && conda clean -afy
 
 #Install perl modules
 RUN cpanm --notest \
