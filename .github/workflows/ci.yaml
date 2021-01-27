@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        nxf_ver: ["20.07.1", ""]
+        nxf_ver: ["20.10.0", ""]
         mode: ['', '--BEDGRAPH']
     steps:
       - uses: actions/checkout@v2

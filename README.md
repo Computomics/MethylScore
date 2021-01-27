@@ -1,6 +1,6 @@
 ![Integration test](https://github.com/Computomics/MethylScore/workflows/Integration%20test/badge.svg?branch=nextflow)
 ![Docker Container](https://github.com/Computomics/MethylScore/workflows/Docker%20Container/badge.svg?branch=nextflow)
-[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A520.07.1-brightgreen.svg)](https://www.nextflow.io/)
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A520.10.0-brightgreen.svg)](https://www.nextflow.io/)
 # MethylScore-nf
 A [nextflow](https://www.nextflow.io/) implementation of Computomics' MethylScore pipeline
 
@@ -8,12 +8,12 @@ A [nextflow](https://www.nextflow.io/) implementation of Computomics' MethylScor
 
 ## Setting up the environment
 
-The only software dependencies that are required to run MethylScore-nf are [nextflow](https://www.nextflow.io/), and one of the following: [Singularity](https://www.sylabs.io/singularity/), [Docker](https://www.docker.com/) or [Podman](https://podman.io/).
+The only software dependencies that are required to run MethylScore are [nextflow](https://www.nextflow.io/), and one of the following: [Singularity](https://www.sylabs.io/singularity/), [Docker](https://www.docker.com/) or [Podman](https://podman.io/).
 
 For example if you want to run the pipeline on the CBE cluster using Singularity, do the following on the login node:
 
 ```bash
-module load nextflow/20.07.1
+module load nextflow/20.10.0
 ```
 
 ## Running the pipeline
