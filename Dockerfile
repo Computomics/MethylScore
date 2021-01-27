@@ -4,10 +4,13 @@ LABEL authors="patrick.huether@gmi.oeaw.ac.at" \
 
 #Install dependencies
 RUN apt-get update 
-RUN apt-get install -y build-essential procps graphviz libgsl-dev perl cpanminus
+RUN apt-get install -y build-essential procps graphviz libgsl-dev
 RUN apt-get clean -y
 
 COPY environment.yaml /
+
+RUN conda env create -f /environment.yaml && conda clean -afy && conda activate MethylScore
+ENV PATH /opt/conda/envs/MethylScore/bin:$PATH
 
 #Install perl modules
 RUN cpanm --notest Getopt::Long \
@@ -25,7 +28,3 @@ RUN cpanm --notest Getopt::Long \
 	Data::Dumper \
 	List::Util \
 	Compress::BGZF::Reader
-
-RUN conda env create -f /environment.yaml && conda clean -afy
-ENV PATH /opt/conda/envs/MethylScore/bin:$PATH
-
