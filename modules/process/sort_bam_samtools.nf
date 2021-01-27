@@ -6,10 +6,10 @@ process SORT {
     tuple val(sampleID), path(bam)
 
     output:
-    tuple val(sampleID), path("${sampleID}.sorted.bam"), emit: bam
+    tuple val(sampleID), path("*.sorted.bam"), emit: bam
 
     script:
     """
-    samtools sort -@ ${task.cpus} -o ${sampleID}.sorted.bam $bam
+    samtools view @ ${task.cpus} -bh -F 0x200 -F 0x4 | samtools sort -@ ${task.cpus} -o ${bam.baseName}.sorted.bam $bam
     """
-}  
+} 

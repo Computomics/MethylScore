@@ -1,4 +1,4 @@
-process EXTRACT {
+process METHYLDACKEL {
     tag "$sampleID:$chromosomeID"
     publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
 
@@ -22,6 +22,5 @@ process EXTRACT {
     ${bamsplit}
 
     sort -k2,2n <(tail -n+2 -q *bedGraph) | awk '{print "${sampleID}\\t"\$0}' > ${sampleID}.allC
-    #awk '{print "${sampleID}\\t"\$0}' <(tail -n+2 -q *bedGraph) > ${sampleID}.allC
     """
 }

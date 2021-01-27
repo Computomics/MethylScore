@@ -4,8 +4,9 @@ include { MERGE       } from '../process/MergeSamFiles_picard'
 include { DEDUP       } from '../process/MarkDuplicates_picard'
 include { STATISTICS  } from '../process/get_read_statistics'
 include { SPLIT       } from '../process/split_bam_by_chromosome'
-include { EXTRACT     } from '../process/methyldackel_extract'
 include { MATRIX      } from './sub/get_genome_matrix'
+
+include { METHYLDACKEL } from '../process/methyldackel'
 
 workflow BAM {
     main:
@@ -14,17 +15,19 @@ workflow BAM {
 
     GET_SAMPLES()
 
-    GET_SAMPLES.out.samples
+    SORT(GET_SAMPLES.out.samples)
+
+    SORT.out.bam
+        .groupTuple(by:0)
         .branch { sampleID, bam ->
             multi_rep: bam.toList().size() > 1
             single_rep: true
         }
         .set { samples }
 
-    samples.single_rep | SORT
     samples.multi_rep | MERGE
 
-    alignments = SORT.out.bam.mix(MERGE.out.bam)
+    alignments = samples.single_rep.mix(MERGE.out.bam)
 
     if ( params.DO_DEDUP ) { alignments = DEDUP(alignments).bam }
 
@@ -32,10 +35,10 @@ workflow BAM {
 
     SPLIT(alignments, GET_SAMPLES.out.fasta)
 
-    EXTRACT(SPLIT.out.bam.join(SPLIT.out.fasta))
+    METHYLDACKEL(SPLIT.out.bam.join(SPLIT.out.fasta))
 
     MATRIX(
-        EXTRACT.out.consensus,
+        METHYLDACKEL.out.consensus,
         SPLIT.out.fasta,
         alignments
     )

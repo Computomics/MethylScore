@@ -1,5 +1,5 @@
 process MERGE {
-    tag "${sampleID}:${bam.name}"
+    tag "${sampleID}:${bam}"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
@@ -18,6 +18,7 @@ process MERGE {
         -Xmx${mem}m \\
         -Xms${mem / 4}m \\
         MergeSamFiles \\
+            ASSUME_SORTED=true \\
             I=${bam.join(' I=')} \\
             O=${sampleID}.merged.bam
     """

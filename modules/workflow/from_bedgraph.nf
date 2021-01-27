@@ -8,15 +8,19 @@ workflow BEDGRAPH {
 
     GET_SAMPLES()
 
+    GET_SAMPLES.out.samples
+        .groupTuple(by:0)
+        .set { samples }
+
     SPLIT(
-        GET_SAMPLES.out.samples,
+        samples,
         GET_SAMPLES.out.fasta
     )
 
     MATRIX(
         SPLIT.out.consensus,
         SPLIT.out.fasta,
-        GET_SAMPLES.out.samples
+        samples
     )
 
     emit:

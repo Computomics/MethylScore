@@ -18,10 +18,8 @@ workflow GET_SAMPLES {
             }
         .set { inputMap }
 
-    sampleIndex = 1
     inputMap
         .map { record -> [ record.sampleID, record.filePath ] }
-        .groupTuple(by:0)
         .set {samples}
 
     emit:

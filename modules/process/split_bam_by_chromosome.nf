@@ -7,7 +7,7 @@ process SPLIT {
     each path(fasta)
 
     output:
-    tuple val(chromosomeID), val(sampleID), path("${sampleID}.${chromosomeID}.split.bam"), emit: bam
+    tuple val(chromosomeID), val(sampleID), path("${chromosomeID}.bam"), emit: bam
     tuple val(chromosomeID), path(fasta), emit: fasta
 
     script:
@@ -16,6 +16,6 @@ process SPLIT {
     samtools index ${bam}
     cat <(samtools view -H ${bam} | grep -E "@HD|SN:${chromosomeID}\$(printf '\\t')") \\
         <(samtools view ${bam} ${chromosomeID}) \\
-        | samtools view -bo ${sampleID}.${chromosomeID}.split.bam -
+        | samtools view -bo ${chromosomeID}.bam -
     """
 }
