@@ -3,14 +3,12 @@ LABEL authors="patrick.huether@gmi.oeaw.ac.at" \
     description="Container image containing all dependencies for the MethylScore pipeline"
 
 #Install dependencies
-RUN apt-get update && apt-get install -y build-essential procps graphviz libgsl-dev && apt-get clean -y
+RUN apt-get update && apt-get install -y build-essential procps graphviz libgsl-dev perl cpanminus && apt-get clean -y
 
 COPY environment.yaml /
 
-RUN conda env update -n base -f environment.yaml && conda clean -afy
-
 #Install perl modules
-RUN cpanm --notest \
+RUN cpanm --notest --force \
 	Getopt::Long \
 	Thread::Pool \
 	Thread::Conveyor::Array \
@@ -26,3 +24,6 @@ RUN cpanm --notest \
 	Data::Dumper \
 	List::Util \
 	Compress::BGZF::Reader
+
+RUN conda env create -f /environment.yaml && conda clean -afy
+ENV PATH /opt/conda/envs/MethylScore/bin:$PATH
