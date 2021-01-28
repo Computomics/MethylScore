@@ -45,6 +45,7 @@ workflow BAM {
 
     emit:
     matrixWG = MATRIX.out.matrixWG
+    matrixCHROM = MATRIX.out.matrixCHROM
     indexedSamples = MATRIX.out.indexedSamples
     mrsheet = MATRIX.out.mrsheet
     dmrsheet = MATRIX.out.dmrsheet

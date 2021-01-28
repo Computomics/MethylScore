@@ -7,13 +7,13 @@ process SPLIT {
     each path(fasta)
 
     output:
-    tuple val(chromosomeID), val(sampleID), path('*.allC'), emit: consensus
+    tuple val(chromosomeID), val(sampleID), path('*.allC'), optional: true, emit: consensus
     tuple val(chromosomeID), path(fasta), emit: fasta
 
     script:
     chromosomeID = fasta.baseName
     def compressed = bedgraph.first().toString().endsWith('gz') ? 'zcat' : 'cat'
     """
-    ${compressed} ${bedgraph} | awk '\$1 == "${chromosomeID}"' | sort -k2,2n | awk '{print "${sampleID}\\t"\$0}' > ${sampleID}.allC
+    ${compressed} ${bedgraph} | awk '\$1 == "${chromosomeID}"' | sort -k2,2n | awk '{ if(NR > 0) {print "${sampleID}\\t"\$0 > "${sampleID}.allC"}}'
     """
 }

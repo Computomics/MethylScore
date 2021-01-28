@@ -29,6 +29,7 @@ workflow MATRIX {
 
     emit:
     matrixWG
+    matrixCHROM = BUILD.out.matrix
     indexedSamples = GENERATE_SHEETS.out.indexedSamples
     mrsheet = GENERATE_SHEETS.out.mrsheet
     dmrsheet = GENERATE_SHEETS.out.dmrsheet

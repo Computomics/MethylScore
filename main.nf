@@ -106,16 +106,22 @@ workflow {
 
     CONSENSUS()
 
+    if (params.MR_PARAMS) {
+        CONSENSUS.out.matrixCHROM.set{ matrix }
+    } else {
+        CONSENSUS.out.matrixWG.set{ matrix }
+    }
+
     CALL_MRS(
         CONSENSUS.out.indexedSamples,
-        CONSENSUS.out.matrixWG.collect(),
+        matrix,
         hmm_params_file
     )
 
     if (params.IGV) { MATRIX_TO_IGV(CONSENSUS.out.matrixWG, CALL_MRS.out.bed.collect{ it[1] }) }
 
     SPLIT_MRS(
-        CALL_MRS.out.bed.collect{ it[1] },
+        CALL_MRS.out.bed.collectFile{ sample, bed -> ["${sample}.MRs.bed", bed] }.collect(),
         CONSENSUS.out.mrsheet
     )
 
