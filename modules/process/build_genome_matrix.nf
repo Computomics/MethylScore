@@ -10,15 +10,14 @@ process BUILD {
     path("*.genome_matrix.tsv"), emit: matrix
 
     script:
-    def input_format = params.METHYLPY ? "methylpy" : "bismark"
+    def input_format = params.METHYLPY ? "methylpy" : "bedgraph"
     """
     sort --parallel=${task.cpus} -m -k3,3g -T . ${consensus} > ${chromosomeID}.allC
 
-    perl ${projectDir}/bin/generate_genome_matrix.pl \\
-        -s ${samplesheet} \\
-        -f ${chromosomeID}.allC \\
-        -i ${input_format} \\
-        -r ${chromosomeID}.fa \\
-        -o ${chromosomeID}.genome_matrix.tsv
+    python ${projectDir}/bin/generate_genome_matrix.py \\
+        --samples ${samplesheet} \\
+        --allC ${chromosomeID}.allC \\
+        --format ${input_format} \\
+        --fasta ${chromosomeID}.fa
     """
 }
