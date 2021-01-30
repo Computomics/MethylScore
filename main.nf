@@ -121,20 +121,19 @@ workflow {
     if (params.IGV) { MATRIX_TO_IGV(CONSENSUS.out.matrixWG, CALL_MRS.out.bed.collect{ it[1] }) }
 
     SPLIT_MRS(
-        CALL_MRS.out.bed.collectFile{ sample, bed -> ["${sample}.MRs.bed", bed] }.collect(),
+        CALL_MRS.out.bed.collectFile(){ sample, bed -> ["${sample}.MRs.bed", bed] }.collect(),
         CONSENSUS.out.mrsheet
     )
 
     CALL_DMRS(
         CONSENSUS.out.index.collect(),
         CONSENSUS.out.dmrsheet.collect(),
-        SPLIT_MRS.out.chunks.collect().flatten(),
+        SPLIT_MRS.out.chunks.transpose(),
         contexts
     )
 
     MERGE_DMRS(
-        CALL_DMRS.out.segments.groupTuple(by:0),
-        CONSENSUS.out.dmrsheet,
-        contexts
+        CALL_DMRS.out.segments.collectFile(){ comp, context, segment -> ["${comp}.${context}.dif", segment] },
+        CONSENSUS.out.dmrsheet
     )
 }

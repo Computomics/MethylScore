@@ -1,25 +1,17 @@
 process MERGE_DMRS {
-    tag "$comp:$context"
-    publishDir "${params.PROJECT_FOLDER}/05DMRs", mode: 'copy'
+    tag "$context:$samplesheet.baseName"
+    publishDir "${params.PROJECT_FOLDER}/05DMRs/${samplesheet.baseName}", mode: 'copy'
 
     input:
-    tuple val(comp), path(segments)
-    path(samplesheet)
-    each context
+    path(segments)
+    each path(samplesheet)
 
     output:
     path('*.bed'), emit: dmrs
 
     script:
+    context = segments.toString().tokenize('.')[-2]
     """
-    for segment in *.${context}.out/segments.dif; do
-        if [ -f \$segment ]; then
-            cat \$segment >> ${comp}.${context}.dif;
-        else
-            touch ${comp}.${context}.dif;
-        fi
-    done
-
     cat <<EOF >> parameters.config
     PYTHON_PATH:  "python"
     SCRIPT_PATH: "${projectDir}/bin"
@@ -33,7 +25,7 @@ process MERGE_DMRS {
 
     perl ${projectDir}/bin/merge_DMRs-contexts.pl \\
      ${samplesheet} \\
-     ${comp}.${context}.dif \\
+     ${segments} \\
      . \\
      parameters.config \\
      ${context}

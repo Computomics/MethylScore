@@ -1,26 +1,24 @@
 process CALL_DMRS {
     tag "$context:$chunk"
-    publishDir "${params.PROJECT_FOLDER}/05DMRs/${comp}", mode: 'copy'
+    publishDir "${params.PROJECT_FOLDER}/05DMRs/${comp}/batches", mode: 'copy'
 
     input:
     tuple path(matrixWG), path(tbi)
     path(samplesheet)
-    path(chunk)
+    tuple val(comp), path(chunk)
     each context
 
     output:
-    tuple val(comp), path("${chunk}.${context}.out"), optional: true, emit: segments
+    tuple val(comp), val(context), path("${chunk}.${context}.out/*dif"), optional: true, emit: segments
 
     script:
-    comp = params.PAIRWISE ? chunk.toString().tokenize('.MRbatch')[0] : 'all'
-
     def CLUSTER_MIN_METH = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH : params."CLUSTER_MIN_METH_${context}"
     def CLUSTER_MIN_METH_DIFF = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH_DIFF : params."CLUSTER_MIN_METH_DIFF_${context}"
 
     """
     perl ${projectDir}/bin/SEGMENTS-contexts.pl \\
      -c ${context} \\
-     -s ${samplesheet} \\
+     -s ${comp}.tsv \\
      -r ${chunk} \\
      -m ${matrixWG} \\
      -p ${params.MR_FREQ_CHANGE} \\
