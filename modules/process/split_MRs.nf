@@ -7,11 +7,13 @@ process SPLIT_MRS {
     path(samplesheet)
 
     output:
-    path('*MRbatch*'), emit: chunks
+    tuple val(comp), path('*.MRbatch.*'), emit: chunks
 
     script:
-    comp = params.PAIRWISE ? "${samplesheet.name.minus('.tsv')}.MRbatch" : "all.MRbatch"
+    comp = params.PAIRWISE ? "${samplesheet.name.minus('.tsv')}" : "all"
     """
-    perl ${projectDir}/bin/split_MRfile.pl ${samplesheet} "${comp}" ${params.MR_BATCH_SIZE}
+    for i in *bed; do sort -k1,1 -k2,2n \$i -o \$i; done
+    
+    perl ${projectDir}/bin/split_MRfile.pl ${samplesheet} "${comp}.MRbatch" ${params.MR_BATCH_SIZE}
     """
 }
