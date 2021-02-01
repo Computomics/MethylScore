@@ -1,6 +1,7 @@
 process MERGE_DMRS {
     tag "$context:$samplesheet.baseName"
     publishDir "${params.PROJECT_FOLDER}/05DMRs/${samplesheet.baseName}", mode: 'copy'
+    cache 'deep'
 
     input:
     path(segments)

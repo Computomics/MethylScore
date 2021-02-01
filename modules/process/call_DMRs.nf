@@ -1,6 +1,7 @@
 process CALL_DMRS {
     tag "$context:$chunk"
     publishDir "${params.PROJECT_FOLDER}/05DMRs/${comp}/batches", mode: 'copy'
+    cache 'deep'
 
     input:
     tuple path(matrixWG), path(tbi)

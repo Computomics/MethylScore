@@ -1,6 +1,7 @@
 process SPLIT_MRS {
     tag "batchsize:${params.MR_BATCH_SIZE}"
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
+    cache 'deep'
 
     input:
     path(bed)
