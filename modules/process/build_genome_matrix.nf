@@ -1,9 +1,9 @@
 process BUILD {
-    tag "$chromosomeID"
-    publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
+    tag "$fasta.id"
+    publishDir "${params.PROJECT_FOLDER}/03matrix/", mode: 'copy'
 
     input:
-    tuple val(chromosomeID), val(sampleID), path(consensus), path(fasta)
+    tuple val(fasta), val(sampleID), path(consensus)
     path(samplesheet)
 
     output:
@@ -12,12 +12,12 @@ process BUILD {
     script:
     def input_format = params.METHYLPY ? "methylpy" : "bedgraph"
     """
-    sort --parallel=${task.cpus} -m -k3,3g -T . ${consensus} > ${chromosomeID}.allC
+    sort --parallel=${task.cpus} -m -k3,3g -T . ${consensus} > ${fasta.id}.allC
 
     python ${projectDir}/bin/generate_genome_matrix.py \\
         --samples ${samplesheet} \\
-        --allC ${chromosomeID}.allC \\
+        --allC ${fasta.id}.allC \\
         --format ${input_format} \\
-        --fasta ${chromosomeID}.fa
+        --fasta ${fasta.seq}
     """
 }

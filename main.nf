@@ -101,7 +101,7 @@ if (params.BEDGRAPH) {
 
 workflow {
 
-    contexts = params.DMRS_PER_CONTEXT ? Channel.from(params.DMR_CONTEXTS.tokenize(',')) : Channel.from('combined')
+    contexts = params.DMRS_PER_CONTEXT ? Channel.fromList(params.DMR_CONTEXTS.tokenize(',')) : Channel.of('combined')
     hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfExists: true).collect() : file('null')
 
     CONSENSUS()
@@ -121,7 +121,7 @@ workflow {
     if (params.IGV) { MATRIX_TO_IGV(CONSENSUS.out.matrixWG, CALL_MRS.out.bed.collect{ it[1] }) }
 
     SPLIT_MRS(
-        CALL_MRS.out.bed.collectFile(){ sample, bed -> ["${sample}.MRs.bed", bed] }.collect(),
+        CALL_MRS.out.bed.collectFile(cache:true){ sample, bed -> ["${sample}.MRs.bed", bed] }.collect(),
         CONSENSUS.out.mrsheet
     )
 
@@ -133,7 +133,7 @@ workflow {
     )
 
     MERGE_DMRS(
-        CALL_DMRS.out.segments.collectFile(){ comp, context, segment -> ["${comp}.${context}.dif", segment] },
+        CALL_DMRS.out.segments.collectFile(cache:true){ comp, context, segment -> ["${comp}.${context}.dif", segment] },
         CONSENSUS.out.dmrsheet
     )
 }

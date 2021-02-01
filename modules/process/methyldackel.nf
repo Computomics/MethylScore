@@ -1,12 +1,12 @@
 process METHYLDACKEL {
-    tag "$sampleID:$chromosomeID"
-    publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${chromosomeID}", mode: 'copy'
+    tag "$sampleID:$fasta.id"
+    publishDir "${params.PROJECT_FOLDER}/02consensus/${sampleID}/${fasta.id}", mode: 'copy'
 
     input:
-    tuple val(chromosomeID), val(sampleID), path(bamsplit), path(fasta)
+    tuple val(fasta), val(sampleID), path(bamsplit)
 
     output:
-    tuple val(chromosomeID), val(sampleID), path('*.allC'), emit: consensus
+    tuple val(fasta), val(sampleID), path('*.allC'), emit: consensus
 
     script:
     """
@@ -18,7 +18,7 @@ process METHYLDACKEL {
     --minOppositeDepth=1 \\
     --maxVariantFrac=0.01 \\
     --keepDupes \\
-    ${chromosomeID}.fa \\
+    ${fasta.seq} \\
     ${bamsplit}
 
     sort -k2,2n <(tail -n+2 -q *bedGraph) | awk '{print "${sampleID}\\t"\$0}' > ${sampleID}.allC

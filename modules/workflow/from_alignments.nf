@@ -35,11 +35,10 @@ workflow BAM {
 
     SPLIT(alignments, GET_SAMPLES.out.fasta)
 
-    METHYLDACKEL(SPLIT.out.bam.join(SPLIT.out.fasta))
+    METHYLDACKEL(SPLIT.out.bam)
 
     MATRIX(
         METHYLDACKEL.out.consensus,
-        SPLIT.out.fasta,
         alignments
     )
 

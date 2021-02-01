@@ -1,19 +1,17 @@
 process SPLIT {
-    tag "$sampleID:$chromosomeID"
-    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${chromosomeID}/", mode: 'copy'
+    tag "$sampleID:$fasta.id"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${fasta.id}/", mode: 'copy'
 
     input:
     tuple val(sampleID), path(bedgraph)
-    each path(fasta)
+    each fasta
 
     output:
-    tuple val(chromosomeID), val(sampleID), path('*.allC'), optional: true, emit: consensus
-    tuple val(chromosomeID), path(fasta), emit: fasta
+    tuple val(fasta), val(sampleID), path('*.allC'), optional: true, emit: consensus
 
     script:
-    chromosomeID = fasta.baseName
     def compressed = bedgraph.first().toString().endsWith('gz') ? 'zcat' : 'cat'
     """
-    ${compressed} ${bedgraph} | awk '\$1 == "${chromosomeID}"' | sort -k2,2n | awk '{ if(NR > 0) {print "${sampleID}\\t"\$0 > "${sampleID}.allC"}}'
+    ${compressed} ${bedgraph} | awk '\$1 == "${fasta.id}"' | sort -k2,2n | awk '{ if(NR > 0) {print "${sampleID}\\t"\$0 > "${sampleID}.allC"}}'
     """
 }

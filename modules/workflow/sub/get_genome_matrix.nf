@@ -5,22 +5,21 @@ include { GENERATE_SHEETS } from './get_sheets'
 workflow MATRIX {
     take:
     consensus
-    fasta
     samples
 
     main:
 
     samples
-        .collectFile(newLine:true, sort:'index'){ sample, bam -> ['samples.tsv', [ sample, sample + '.allC' ].join('\t')] }
+        .collectFile(cache:true, newLine:true, sort:'index'){ sample, bam -> ['samples.tsv', [ sample, sample + '.allC' ].join('\t')] }
         .set { matrixsheet }
 
     BUILD(
-        consensus.groupTuple(by:0).join(fasta, by:0),
+        consensus.groupTuple(by:0, sort:true),
         matrixsheet.collect()
     )
 
     BUILD.out.matrix
-        .collectFile(name: 'genome_matrix.tsv', keepHeader: true, sort: { it.baseName }, storeDir: "${params.PROJECT_FOLDER}/03matrix")
+        .collectFile(cache:true, name: 'genome_matrix.tsv', keepHeader:true, sort:{ it.baseName }, storeDir:"${params.PROJECT_FOLDER}/03matrix")
         .set{ matrixWG }
 
     INDEX(matrixWG)

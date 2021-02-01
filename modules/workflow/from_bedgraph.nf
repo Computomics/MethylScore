@@ -19,7 +19,6 @@ workflow BEDGRAPH {
 
     MATRIX(
         SPLIT.out.consensus,
-        SPLIT.out.fasta,
         samples
     )
 

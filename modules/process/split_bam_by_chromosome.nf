@@ -1,21 +1,19 @@
 process SPLIT {
-    tag "$sampleID:$chromosomeID"
-    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${chromosomeID}/", mode: 'copy'
+    tag "$sampleID:$fasta.id"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${fasta.id}/", mode: 'copy'
 
     input:
     tuple val(sampleID), path(bam)
-    each path(fasta)
+    each fasta
 
     output:
-    tuple val(chromosomeID), val(sampleID), path("${chromosomeID}.bam"), emit: bam
-    tuple val(chromosomeID), path(fasta), emit: fasta
+    tuple val(fasta), val(sampleID), path("${fasta.id}.bam"), emit: bam
 
     script:
-    chromosomeID = fasta.baseName
     """
     samtools index ${bam}
-    cat <(samtools view -H ${bam} | grep -E "@HD|SN:${chromosomeID}\$(printf '\\t')") \\
-        <(samtools view ${bam} ${chromosomeID}) \\
-        | samtools view -bo ${chromosomeID}.bam -
+    cat <(samtools view -H ${bam} | grep -E "@HD|SN:${fasta.id}\$(printf '\\t')") \\
+        <(samtools view ${bam} ${fasta.id}) \\
+        | samtools view -bo ${fasta.id}.bam -
     """
 }

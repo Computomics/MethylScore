@@ -6,7 +6,7 @@ workflow MATRIX {
     main:
 
     Channel
-        .fromPath(params.MATRIX)
+        .fromPath(params.MATRIX, checkIfExists:true)
         .set { matrixWG }
 
     matrixWG | (INDEX & SPLIT)

@@ -4,7 +4,8 @@ workflow GET_SAMPLES {
     Channel
         .fromPath(params.GENOME, checkIfExists: true)
         .splitFasta( record: [id: true, text: true] )
-        .collectFile(storeDir: "${workDir}/fasta") { fasta -> ["${fasta.id}.fa", fasta.text] }
+        .collectFile(cache:true, storeDir: "${workDir}/fasta"){ fasta -> ["${fasta.id}.fa", fasta.text] }
+        .map{ fasta -> ["id":fasta.baseName, "seq":fasta] }
         .set { fasta }
 
     Channel
@@ -14,6 +15,6 @@ workflow GET_SAMPLES {
         .set { samples }
 
     emit:
-    samples
     fasta
+    samples
 }
