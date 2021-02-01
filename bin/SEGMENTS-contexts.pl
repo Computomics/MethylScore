@@ -344,8 +344,8 @@ print "prev_pos_to_compare: " . join(",", @prev_pos_to_compare) . "\n" if ($DEBU
 print "pos $pos / freq $MRfreq compared to $cmp_pos / ".$MRfreqs{$cmp_pos}."\n"  if ($DEBUG);
 
                 # if end of meth. block or MR freq change large enough:
-                if ( $cmp_pos == -1 ||
-                     abs($MRfreq - $MRfreqs{$cmp_pos}) >= $nr_samples * $OPT_MRfreq_fraction/100 ) {
+                if ( scalar(@segments) > 0 && ( ($cmp_pos == -1) ||
+                     abs($MRfreq - $MRfreqs{$cmp_pos}) >= $nr_samples * $OPT_MRfreq_fraction/100)) {
 
                     my ($adj_start, @subsegments) = get_subsegments($segments[-1]{"chr"}, $segments[-1]{"start"}, $pos);
 print "no. subsegments: " . scalar(@subsegments) . "\n" if ($DEBUG);
