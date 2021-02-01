@@ -1,7 +1,6 @@
 process CALL_MRS {
     tag "${sampleID}:${matrix}"
     publishDir "${params.PROJECT_FOLDER}/04MRs/${sampleID}", mode: 'copy'
-    cache 'deep'
 
     input:
     tuple val(sampleID), val(sampleIDX)

@@ -1,7 +1,6 @@
 process BUILD {
     tag "$chromosomeID"
     publishDir "${params.PROJECT_FOLDER}/03matrix", mode: 'copy'
-    cache 'deep'
 
     input:
     tuple val(chromosomeID), val(sampleID), path(consensus), path(fasta)
