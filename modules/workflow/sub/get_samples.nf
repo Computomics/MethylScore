@@ -9,18 +9,9 @@ workflow GET_SAMPLES {
 
     Channel
         .fromPath(params.SAMPLE_SHEET, checkIfExists: true)
-        .splitText()
-        .map{ line ->
-                def list = line.split()
-                def path = file(list[-1])
-                assert path.exists(), "${path} doesn't exist!"
-                [ 'sampleID':list[0], 'filePath':path ]
-            }
-        .set { inputMap }
-
-    inputMap
-        .map { record -> [ record.sampleID, record.filePath ] }
-        .set {samples}
+        .splitCsv(header:false, strip:true, sep:'\t')
+        .map{ line -> [ line[0], file(line[-1], checkIfExists:true) ] }
+        .set { samples }
 
     emit:
     samples
