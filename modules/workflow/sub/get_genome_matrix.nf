@@ -1,6 +1,5 @@
-include { BUILD           } from '../../process/build_genome_matrix'
-include { INDEX           } from '../../process/build_sample_index'
-include { GENERATE_SHEETS } from './get_sheets'
+include { BUILD } from '../../process/build_genome_matrix'
+include { INDEX } from '../../process/index_genome_matrix'
 
 workflow MATRIX {
     take:
@@ -18,19 +17,9 @@ workflow MATRIX {
         matrixsheet.collect()
     )
 
-    BUILD.out.matrix
-        .collectFile(cache:true, name: 'genome_matrix.tsv', keepHeader:true, sort:{ it.baseName }, storeDir:"${params.PROJECT_FOLDER}/03matrix")
-        .set{ matrixWG }
-
-    INDEX(matrixWG)
-
-    GENERATE_SHEETS(INDEX.out.indexedSamples)
+    INDEX(BUILD.out.matrix)
 
     emit:
-    matrixWG
     matrixCHROM = BUILD.out.matrix
-    indexedSamples = GENERATE_SHEETS.out.indexedSamples
-    mrsheet = GENERATE_SHEETS.out.mrsheet
-    dmrsheet = GENERATE_SHEETS.out.dmrsheet
-    index = INDEX.out.index
+    matrixINDEX = INDEX.out.index
 }

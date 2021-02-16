@@ -3,9 +3,7 @@ process CALL_DMRS {
     publishDir "${params.PROJECT_FOLDER}/05DMRs/${comp}/batches", mode: 'copy'
 
     input:
-    tuple path(matrixWG), path(tbi)
-    path(samplesheet)
-    tuple val(comp), path(chunk)
+    tuple val(chromID), val(comp), path(chunk), path(samplesheet), path(matrixWG), path(tbi)
     each context
 
     output:
@@ -18,7 +16,7 @@ process CALL_DMRS {
     """
     perl ${projectDir}/bin/SEGMENTS-contexts.pl \\
      -c ${context} \\
-     -s ${comp}.tsv \\
+     -s ${samplesheet} \\
      -r ${chunk} \\
      -m ${matrixWG} \\
      -p ${params.MR_FREQ_CHANGE} \\

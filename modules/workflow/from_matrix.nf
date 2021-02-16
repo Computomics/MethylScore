@@ -1,23 +1,24 @@
-include { INDEX           } from '../process/build_sample_index'
-include { SPLIT           } from '../process/split_matrix_by_chromosome'
-include { GENERATE_SHEETS } from './sub/get_sheets'
+
+include { INDEX } from '../process/index_genome_matrix'
+include { SPLIT } from '../process/split_matrix_by_chromosome'
 
 workflow MATRIX {   
     main:
 
     Channel
         .fromPath(params.MATRIX, checkIfExists:true)
-        .set { matrixWG }
+        .set { matrix }
 
-    matrixWG | (INDEX & SPLIT)
+    SPLIT(matrix)
 
-    GENERATE_SHEETS(INDEX.out.indexedSamples)
+    SPLIT.out.matrixCHROM
+     .flatten()
+     .map { matrix -> [ matrix.name.minus('.genome_matrix.tsv'), matrix ] }
+     .set { matrixCHROM }
+
+    INDEX(matrixCHROM)
 
     emit:
-    matrixWG
-    matrixCHROM = SPLIT.out.matrixCHROM.flatten()
-    indexedSamples = GENERATE_SHEETS.out.indexedSamples
-    mrsheet = GENERATE_SHEETS.out.mrsheet
-    dmrsheet = GENERATE_SHEETS.out.dmrsheet
-    index = INDEX.out.index
+    matrixCHROM
+    matrixINDEX = INDEX.out.index
 }

@@ -1,19 +1,20 @@
 process SPLIT_MRS {
-    tag "batchsize:${params.MR_BATCH_SIZE}"
+    tag "${chromID}:batchsize:${params.MR_BATCH_SIZE}"
     publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
 
     input:
-    path(bed)
-    path(samplesheet)
+    tuple val(chromID), val(sampleID), path(bed)
+    each path(samplesheet)
 
     output:
-    tuple val(comp), path('*.MRbatch.*'), emit: chunks
+    tuple val(chromID), val(comp), path('*.MRbatch.*'), path(samplesheet), emit: chunks
 
     script:
-    comp = params.PAIRWISE ? "${samplesheet.name.minus('.tsv')}" : "all"
+    comp = samplesheet.name.minus('.tsv')
     """
-    for i in *bed; do sort -k1,1 -k2,2n \$i -o \$i; done
-    
-    perl ${projectDir}/bin/split_MRfile.pl ${samplesheet} "${comp}.MRbatch" ${params.MR_BATCH_SIZE}
+    perl ${projectDir}/bin/split_MRfile.pl \\
+        ${samplesheet} \\
+        "${comp}.MRbatch" \\
+        ${params.MR_BATCH_SIZE}
     """
 }

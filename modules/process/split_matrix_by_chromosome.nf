@@ -10,6 +10,6 @@ process SPLIT {
 
     script:
     """
-    awk '\$0!~/^#/{if (end != \$1) close(end); print >> \$1".genome_matrix.tsv"; end = \$1}' ${matrix}
+    awk 'FNR==1{header=\$0;next}{if (end != \$1) close(end); print header > \$1".genome_matrix.tsv"; print >> \$1".genome_matrix.tsv"; end = \$1}' ${matrix}
     """
 }

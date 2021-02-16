@@ -8,21 +8,21 @@ process CALL_MRS {
     path(parameters)
 
     output:
-    tuple val(sampleID), path("*${sampleID}.MRs.bed"), emit: bed
+    tuple val(chromID), val(sampleID), path("*${sampleID}.MRs.bed"), emit: bed
     path("${sampleID}.hmm_params"), optional: true, emit: hmm_params
     path("*${sampleID}.MR_stats.tsv"), emit: stats
 
     script:
+    chromID = matrix.name.tokenize('.')[0]
     def HUMAN = params.HUMAN ? "-human" : ""
     def MIN_C = params.MR_MIN_C > 0 ? "-n ${params.MR_MIN_C}" : "-n -1"
     def HMM_PARAMETERS = params.MR_PARAMS ? "-P $parameters" : "-p ${sampleID}.hmm_params"
-    def CHROM = params.MR_PARAMS ? "${matrix.name.toString().tokenize('.')[0]}." : ""
     """
     hmm_mrs \\
      -x ${sampleIDX} \\
      -y ${sampleID} \\
      -c ${params.MIN_COVERAGE} \\
-     -o ${CHROM}${sampleID}.MRs.bed \\
+     -o ${sampleID}.MRs.bed \\
      -d ${params.DESERT_SIZE} \\
      -i 30 \\
      -m ${params.MERGE_DIST} \\
@@ -32,6 +32,6 @@ process CALL_MRS {
      ${matrix} \\
      ${HMM_PARAMETERS}
 
-    MR_stats.sh ${CHROM}${sampleID} ${CHROM}${sampleID}.MRs.bed
+    MR_stats.sh ${sampleID} ${chromID}.${sampleID}.MRs.bed
     """
 }

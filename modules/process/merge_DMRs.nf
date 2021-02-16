@@ -10,7 +10,7 @@ process MERGE_DMRS {
     path('*.bed'), emit: dmrs
 
     script:
-    context = segments.toString().tokenize('.')[-2]
+    context = segments.name.tokenize('.')[-2]
     """
     cat <<EOF >> parameters.config
     PYTHON_PATH:  "python"

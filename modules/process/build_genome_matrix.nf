@@ -7,7 +7,7 @@ process BUILD {
     path(samplesheet)
 
     output:
-    path("*.genome_matrix.tsv"), emit: matrix
+    tuple val(fasta.id), path("*.genome_matrix.tsv"), emit: matrix
 
     script:
     def input_format = params.METHYLPY ? "methylpy" : "bedgraph"

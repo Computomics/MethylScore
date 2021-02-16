@@ -83,13 +83,6 @@ Config Profile : ${workflow.profile}
 // validate parameters
 ParameterChecks.checkParams(params)
 
-
-// modules/process
-include { CALL_MRS   } from './modules/process/call_MRs'
-include { SPLIT_MRS  } from './modules/process/split_MRs'
-include { CALL_DMRS  } from './modules/process/call_DMRs'
-include { MERGE_DMRS } from './modules/process/merge_DMRs'
-
 // modules/workflow
 if (params.BEDGRAPH) {
     include { BEDGRAPH as CONSENSUS } from './modules/workflow/from_bedgraph'
@@ -99,6 +92,16 @@ if (params.BEDGRAPH) {
     include { BAM as CONSENSUS      } from './modules/workflow/from_alignments'
 }
 
+// modules/subworkflow
+include { SAMPLESHEET } from './modules/workflow/sub/get_sheets'
+
+// modules/process
+include { CALL_MRS   } from './modules/process/call_MRs'
+include { SPLIT_MRS  } from './modules/process/split_MRs'
+include { CALL_DMRS  } from './modules/process/call_DMRs'
+include { MERGE_DMRS } from './modules/process/merge_DMRs'
+
+
 workflow {
 
     contexts = params.DMRS_PER_CONTEXT ? Channel.fromList(params.DMR_CONTEXTS.tokenize(',')) : Channel.of('combined')
@@ -106,14 +109,20 @@ workflow {
 
     CONSENSUS()
 
+    CONSENSUS.out.matrixCHROM
+        .collectFile(cache:true, keepHeader:true, sort:{ it.baseName }, storeDir:"${params.PROJECT_FOLDER}/03matrix"){ chromID, matrix -> [ 'all.genome_matrix.tsv', matrix ]}
+        .set{ matrixWG }
+
+    matrixWG | SAMPLESHEET
+
     if (params.MR_PARAMS) {
-        CONSENSUS.out.matrixCHROM.set{ matrix }
+        CONSENSUS.out.matrixCHROM.map { chrom, matrix -> matrix }.set{ matrix }
     } else {
         CONSENSUS.out.matrixWG.set{ matrix }
     }
 
     CALL_MRS(
-        CONSENSUS.out.indexedSamples,
+        SAMPLESHEET.out.indexedSamples,
         matrix,
         hmm_params_file
     )
@@ -121,19 +130,17 @@ workflow {
     if (params.IGV) { MATRIX_TO_IGV(CONSENSUS.out.matrixWG, CALL_MRS.out.bed.collect{ it[1] }) }
 
     SPLIT_MRS(
-        CALL_MRS.out.bed.collectFile(cache:true){ sample, bed -> ["${sample}.MRs.bed", bed] }.collect(),
-        CONSENSUS.out.mrsheet
+        CALL_MRS.out.bed.groupTuple(by:0),
+        SAMPLESHEET.out.sheet
     )
 
     CALL_DMRS(
-        CONSENSUS.out.index.collect(),
-        CONSENSUS.out.dmrsheet.collect(),
-        SPLIT_MRS.out.chunks.transpose(),
+        SPLIT_MRS.out.chunks.combine(CONSENSUS.out.matrixINDEX, by:0).transpose(by:2),
         contexts
     )
 
     MERGE_DMRS(
         CALL_DMRS.out.segments.collectFile(cache:true){ comp, context, segment -> ["${comp}.${context}.dif", segment] },
-        CONSENSUS.out.dmrsheet
+        SAMPLESHEET.out.sheet
     )
 }
