@@ -22,6 +22,9 @@ GENOME : false
 # project folder (absolute path)
 PROJECT_FOLDER : "./results"
 
+# Remove intermediate files?
+REMOVE_INTMED_FILES : true
+
 # sample sheet file (absolute path)
 SAMPLE_SHEET : false 
 

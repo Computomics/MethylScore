@@ -1,6 +1,6 @@
 process CALL_DMRS {
-    tag "$context:$chunk"
-    publishDir "${params.PROJECT_FOLDER}/05DMRs/${comp}/batches", mode: 'copy'
+    tag "${context}:${chunk}"
+    publishDir "${params.PROJECT_FOLDER}/05DMRs/${comp}/batches", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:
     tuple val(chromID), val(comp), path(chunk), path(samplesheet), path(matrixWG), path(tbi)

@@ -32,6 +32,7 @@ Script dir                : $projectDir
 Working dir               : $workDir
 ------------------------------------------------------------------------------------------------------------------------------------
 PROJECT_FOLDER            : ${params.PROJECT_FOLDER}
+REMOVE_INTMED_FILES       : ${params.REMOVE_INTMED_FILES}
 ------------------------------------------------------------------------------------------------------------------------------------
 GENOME                    : ${params.GENOME}
 SAMPLE_SHEET              : ${params.SAMPLE_SHEET}

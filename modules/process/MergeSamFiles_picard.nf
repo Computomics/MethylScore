@@ -1,6 +1,6 @@
 process MERGE_BAM {
     tag "${sampleID}:${bam}"
-    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
+    publishDir "${params.PROJECT_FOLDER}/01mappings/merged/${sampleID}", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:
     tuple val(sampleID), path(bam)

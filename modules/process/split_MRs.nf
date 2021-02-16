@@ -1,6 +1,6 @@
 process SPLIT_MRS {
     tag "${chromID}:batchsize:${params.MR_BATCH_SIZE}"
-    publishDir "${params.PROJECT_FOLDER}/05DMRs/batches", mode: 'copy'
+    publishDir "${params.PROJECT_FOLDER}/05DMRs/${comp}/batches", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:
     tuple val(chromID), val(sampleID), path(bed)

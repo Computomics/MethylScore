@@ -1,5 +1,5 @@
 process IGV {
-    tag "$bed"
+    tag "${bed}"
     publishDir "${params.PROJECT_FOLDER}/igv", mode: 'copy'
 
     input:

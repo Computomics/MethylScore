@@ -1,6 +1,6 @@
 process DEDUPLICATE {
-    tag "$sampleID"
-    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
+    tag "${sampleID}"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/deduplicated/${sampleID}", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:
     tuple val(sampleID), path(bam)

@@ -1,6 +1,6 @@
 process SPLIT_BAM {
-    tag "$sampleID:$fasta.id"
-    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${fasta.id}/", mode: 'copy'
+    tag "${sampleID}:${fasta.id}"
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${fasta.id}/", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:
     tuple val(sampleID), path(bam)

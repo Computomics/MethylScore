@@ -1,6 +1,6 @@
 process SPLIT_MATRIX {
-    tag "$matrix"
-    publishDir "${params.PROJECT_FOLDER}/03matrix/", mode: 'copy'
+    tag "${matrix}"
+    publishDir "${params.PROJECT_FOLDER}/03matrix/", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:
     tuple val(chromID), path(matrix)

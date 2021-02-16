@@ -1,5 +1,5 @@
 process MERGE_DMRS {
-    tag "$context:$samplesheet.baseName"
+    tag "${context}:${samplesheet.baseName}"
     publishDir "${params.PROJECT_FOLDER}/05DMRs/${samplesheet.baseName}", mode: 'copy'
 
     input:
@@ -7,7 +7,7 @@ process MERGE_DMRS {
     each path(samplesheet)
 
     output:
-    path('*.bed'), emit: dmrs
+    path("*.bed"), emit: dmrs
 
     script:
     context = segments.name.tokenize('.')[-2]

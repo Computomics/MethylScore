@@ -1,4 +1,6 @@
 process GENERATE {
+    tag "${matrix}"
+
     input:
     tuple val(chromID), path(matrix)
 
