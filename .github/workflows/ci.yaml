@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         nxf_ver: ["20.10.0", ""]
-        mode: ['', '--BEDGRAPH']
+        mode: ['', '--BEDGRAPH --SAMPLE_SHEET https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/samplesheet_bedGraph.tsv', '--MATRIX https://github.com/Gregor-Mendel-Institute/test-data/raw/MethylScore/data/genome_matrix.tsv']
     steps:
       - uses: actions/checkout@v2
 
@@ -25,6 +25,6 @@ jobs:
         run: |
           wget -qO- get.nextflow.io | bash
           sudo mv nextflow /usr/local/bin/
-      - name: Run MethylScore on test data
+      - name: Run MethylScore
         run: |
           nextflow run ${GITHUB_WORKSPACE} ${{ matrix.mode }} -profile testing,docker
