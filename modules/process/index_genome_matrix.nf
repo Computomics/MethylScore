@@ -1,4 +1,4 @@
-process INDEX {
+process BUILD_INDEX {
     tag "$matrix"
     publishDir "${params.PROJECT_FOLDER}/03matrix/", mode: 'copy'
 

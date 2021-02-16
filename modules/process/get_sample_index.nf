@@ -1,6 +1,6 @@
 process GENERATE {
     input:
-    path(matrix)
+    tuple val(chromID), path(matrix)
 
     output:
     path('*__*'), emit: indexedSamples

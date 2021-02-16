@@ -44,5 +44,4 @@ workflow BAM {
 
     emit:
     matrixCHROM = MATRIX.out.matrixCHROM
-    matrixINDEX = MATRIX.out.matrixINDEX
 }

@@ -1,5 +1,4 @@
 include { BUILD } from '../../process/build_genome_matrix'
-include { INDEX } from '../../process/index_genome_matrix'
 
 workflow MATRIX {
     take:
@@ -17,9 +16,6 @@ workflow MATRIX {
         matrixsheet.collect()
     )
 
-    INDEX(BUILD.out.matrix)
-
     emit:
     matrixCHROM = BUILD.out.matrix
-    matrixINDEX = INDEX.out.index
 }

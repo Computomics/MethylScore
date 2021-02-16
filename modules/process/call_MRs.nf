@@ -3,8 +3,7 @@ process CALL_MRS {
     publishDir "${params.PROJECT_FOLDER}/04MRs/${sampleID}", mode: 'copy'
 
     input:
-    tuple val(sampleID), val(sampleIDX)
-    each path(matrix)
+    tuple val(sampleID), val(sampleIDX), val(chromID), path(matrix)
     path(parameters)
 
     output:
@@ -13,7 +12,6 @@ process CALL_MRS {
     path("*${sampleID}.MR_stats.tsv"), emit: stats
 
     script:
-    chromID = matrix.name.tokenize('.')[0]
     def HUMAN = params.HUMAN ? "-human" : ""
     def MIN_C = params.MR_MIN_C > 0 ? "-n ${params.MR_MIN_C}" : "-n -1"
     def HMM_PARAMETERS = params.MR_PARAMS ? "-P $parameters" : "-p ${sampleID}.hmm_params"

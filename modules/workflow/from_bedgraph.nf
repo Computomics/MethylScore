@@ -23,5 +23,4 @@ workflow BEDGRAPH {
 
     emit:
     matrixCHROM = MATRIX.out.matrixCHROM
-    matrixINDEX = MATRIX.out.matrixINDEX
 }

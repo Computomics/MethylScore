@@ -96,11 +96,11 @@ if (params.BEDGRAPH) {
 include { SAMPLESHEET } from './modules/workflow/sub/get_sheets'
 
 // modules/process
-include { CALL_MRS   } from './modules/process/call_MRs'
-include { SPLIT_MRS  } from './modules/process/split_MRs'
-include { CALL_DMRS  } from './modules/process/call_DMRs'
-include { MERGE_DMRS } from './modules/process/merge_DMRs'
-
+include { BUILD_INDEX } from './modules/process/index_genome_matrix'
+include { CALL_MRS    } from './modules/process/call_MRs'
+include { SPLIT_MRS   } from './modules/process/split_MRs'
+include { CALL_DMRS   } from './modules/process/call_DMRs'
+include { MERGE_DMRS  } from './modules/process/merge_DMRs'
 
 workflow {
 
@@ -111,23 +111,21 @@ workflow {
 
     CONSENSUS.out.matrixCHROM
         .collectFile(cache:true, keepHeader:true, sort:{ it.baseName }, storeDir:"${params.PROJECT_FOLDER}/03matrix"){ chromID, matrix -> [ 'all.genome_matrix.tsv', matrix ]}
+        .map { matrix -> [ matrix.name.minus('.genome_matrix.tsv'), matrix ] }
         .set{ matrixWG }
 
     matrixWG | SAMPLESHEET
 
-    if (params.MR_PARAMS) {
-        CONSENSUS.out.matrixCHROM.map { chrom, matrix -> matrix }.set{ matrix }
-    } else {
-        CONSENSUS.out.matrixWG.set{ matrix }
-    }
+    matrix = params.MR_PARAMS ? CONSENSUS.out.matrixCHROM : matrixWG
+
+    BUILD_INDEX(matrix)
 
     CALL_MRS(
-        SAMPLESHEET.out.indexedSamples,
-        matrix,
+        SAMPLESHEET.out.indexedSamples.combine(matrix),
         hmm_params_file
     )
 
-    if (params.IGV) { MATRIX_TO_IGV(CONSENSUS.out.matrixWG, CALL_MRS.out.bed.collect{ it[1] }) }
+    if (params.IGV) { MATRIX_TO_IGV(matrixWG, CALL_MRS.out.bed.collect{ it[1] }) }
 
     SPLIT_MRS(
         CALL_MRS.out.bed.groupTuple(by:0),
@@ -135,7 +133,7 @@ workflow {
     )
 
     CALL_DMRS(
-        SPLIT_MRS.out.chunks.combine(CONSENSUS.out.matrixINDEX, by:0).transpose(by:2),
+        SPLIT_MRS.out.chunks.combine(BUILD_INDEX.out.index, by:0).transpose(by:2),
         contexts
     )
 

@@ -1,5 +1,4 @@
 
-include { INDEX } from '../process/index_genome_matrix'
 include { SPLIT } from '../process/split_matrix_by_chromosome'
 
 workflow MATRIX {   
@@ -16,9 +15,6 @@ workflow MATRIX {
      .map { matrix -> [ matrix.name.minus('.genome_matrix.tsv'), matrix ] }
      .set { matrixCHROM }
 
-    INDEX(matrixCHROM)
-
     emit:
     matrixCHROM
-    matrixINDEX = INDEX.out.index
 }
