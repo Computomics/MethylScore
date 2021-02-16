@@ -1,6 +1,6 @@
 include { CALL_DMRS   } from '../process/call_DMRs'
 include { MERGE_DMRS  } from '../process/merge_DMRs'
-include { BUILD_INDEX } from '../process/index_genome_matrix'
+include { INDEX } from '../process/index_genome_matrix'
 
 workflow DMRS {
     take:
@@ -11,10 +11,10 @@ workflow DMRS {
     main:
     def contexts = params.DMRS_PER_CONTEXT ? Channel.fromList(params.DMR_CONTEXTS.tokenize(',')) : Channel.of('combined')
 
-    BUILD_INDEX(matrix)
+    INDEX(matrix)
 
     CALL_DMRS(
-        chunks.combine(BUILD_INDEX.out.index, by:0).transpose(by:2),
+        chunks.combine(INDEX.out.index, by:0).transpose(by:2),
         contexts
     )
 

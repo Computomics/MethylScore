@@ -1,6 +1,6 @@
-include { CALL_MRS   } from '../process/call_MRs'
-include { STATISTICS } from '../process/get_MR_statistics'
-include { SPLIT_MRS  } from '../process/split_MRs'
+include { CALL_MRS      } from '../process/call_MRs'
+include { MR_STATISTICS } from '../process/get_MR_statistics'
+include { SPLIT_MRS     } from '../process/split_MRs'
 
 workflow MRS {
     take:
@@ -20,7 +20,7 @@ workflow MRS {
         .collectFile(cache:true, storeDir:"${params.PROJECT_FOLDER}/04MRs", sort: { it[0] }){ chrom, sample, bed -> ["${sample}.MRs.bed", bed] }
         .set { mrs }
 
-    STATISTICS(mrs)
+    MR_STATISTICS(mrs)
 
     SPLIT_MRS(
         CALL_MRS.out.bed.groupTuple(by:0),

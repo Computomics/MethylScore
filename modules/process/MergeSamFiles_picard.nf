@@ -1,4 +1,4 @@
-process MERGE {
+process MERGE_BAM {
     tag "${sampleID}:${bam}"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 

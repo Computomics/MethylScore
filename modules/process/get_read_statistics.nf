@@ -1,4 +1,4 @@
-process STATISTICS {
+process READ_STATISTICS {
     tag "$sampleID"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 

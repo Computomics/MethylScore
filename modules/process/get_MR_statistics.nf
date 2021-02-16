@@ -1,4 +1,4 @@
-process STATISTICS {
+process MR_STATISTICS {
     tag "${sampleID}"
     publishDir "${params.PROJECT_FOLDER}/04MRs/stats", mode: 'copy'
 

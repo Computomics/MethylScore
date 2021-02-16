@@ -1,4 +1,4 @@
-process SPLIT {
+process SPLIT_MATRIX {
     tag "$matrix"
     publishDir "${params.PROJECT_FOLDER}/03matrix/", mode: 'copy'
 

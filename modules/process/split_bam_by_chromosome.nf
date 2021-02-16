@@ -1,4 +1,4 @@
-process SPLIT {
+process SPLIT_BAM {
     tag "$sampleID:$fasta.id"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${fasta.id}/", mode: 'copy'
 

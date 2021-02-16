@@ -1,6 +1,6 @@
-include { GET_SAMPLES } from './get_samples'
-include { MATRIX      } from './get_genome_matrix'
-include { SPLIT       } from '../process/split_bedgraph_by_chromosome'
+include { GET_SAMPLES    } from './get_samples'
+include { MATRIX         } from './get_genome_matrix'
+include { SPLIT_BEDGRAPH } from '../process/split_bedgraph_by_chromosome'
 
 workflow BEDGRAPH {
     main:
@@ -11,13 +11,13 @@ workflow BEDGRAPH {
         .groupTuple(by:0)
         .set { samples }
 
-    SPLIT(
+    SPLIT_BEDGRAPH(
         samples,
         GET_SAMPLES.out.fasta
     )
 
     MATRIX(
-        SPLIT.out.consensus,
+        SPLIT_BEDGRAPH.out.consensus,
         samples
     )
 

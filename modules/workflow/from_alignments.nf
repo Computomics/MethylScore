@@ -1,23 +1,22 @@
-include { GET_SAMPLES } from './get_samples'
-include { MATRIX      } from './get_genome_matrix'
-include { SORT        } from '../process/sort_bam_samtools'
-include { MERGE       } from '../process/MergeSamFiles_picard'
-include { DEDUP       } from '../process/MarkDuplicates_picard'
-include { STATISTICS  } from '../process/get_read_statistics'
-include { SPLIT       } from '../process/split_bam_by_chromosome'
-
-include { METHYLDACKEL } from '../process/methyldackel'
+include { GET_SAMPLES     } from './get_samples'
+include { MATRIX          } from './get_genome_matrix'
+include { SORT_BAM        } from '../process/sort_bam_samtools'
+include { MERGE_BAM       } from '../process/MergeSamFiles_picard'
+include { DEDUPLICATE     } from '../process/MarkDuplicates_picard'
+include { READ_STATISTICS } from '../process/get_read_statistics'
+include { SPLIT_BAM       } from '../process/split_bam_by_chromosome'
+include { METHYLDACKEL    } from '../process/methyldackel'
 
 workflow BAM {
     main:
 
-    roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
+    def roi_file = params.ROI ? Channel.fromPath(params.ROI, checkIfExists: true).collect() : file('null')
 
     GET_SAMPLES()
 
-    SORT(GET_SAMPLES.out.samples)
+    SORT_BAM(GET_SAMPLES.out.samples)
 
-    SORT.out.bam
+    SORT_BAM.out.bam
         .groupTuple(by:0)
         .branch { sampleID, bam ->
             multi_rep: bam.toList().size() > 1
@@ -25,17 +24,15 @@ workflow BAM {
         }
         .set { samples }
 
-    samples.multi_rep | MERGE
+    MERGE_BAM(samples.multi_rep)
 
-    alignments = samples.single_rep.mix(MERGE.out.bam)
+    def alignments = params.DO_DEDUP ? samples.single_rep | mix(MERGE_BAM.out.bam) | DEDUPLICATE : samples.single_rep | mix(MERGE_BAM.out.bam)
 
-    if ( params.DO_DEDUP ) { alignments = DEDUP(alignments).bam }
+    if ( params.STATISTICS ) { READ_STATISTICS(alignments, roi_file) }
 
-    if ( params.STATISTICS ) { STATISTICS(alignments, roi_file) }
+    SPLIT_BAM(alignments, GET_SAMPLES.out.fasta)
 
-    SPLIT(alignments, GET_SAMPLES.out.fasta)
-
-    METHYLDACKEL(SPLIT.out.bam)
+    METHYLDACKEL(SPLIT_BAM.out.bam)
 
     MATRIX(
         METHYLDACKEL.out.consensus,

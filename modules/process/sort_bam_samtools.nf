@@ -1,4 +1,4 @@
-process SORT {
+process SORT_BAM {
     tag "$sampleID"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
