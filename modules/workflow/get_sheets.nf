@@ -1,4 +1,4 @@
-include { GENERATE } from '../../process/get_sample_index'
+include { GENERATE } from '../process/get_sample_index'
 
 workflow SAMPLESHEET {
     take:

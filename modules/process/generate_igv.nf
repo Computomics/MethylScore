@@ -1,9 +1,9 @@
-process MATRIX_TO_IGV {
+process IGV {
     tag "$bed"
     publishDir "${params.PROJECT_FOLDER}/igv", mode: 'copy'
 
     input:
-    path(matrixWG)
+    tuple val(chromID), path(matrixWG)
     path(bed)
 
     output:

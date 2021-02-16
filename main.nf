@@ -92,53 +92,32 @@ if (params.BEDGRAPH) {
     include { BAM as CONSENSUS      } from './modules/workflow/from_alignments'
 }
 
-// modules/subworkflow
-include { SAMPLESHEET } from './modules/workflow/sub/get_sheets'
+include { SAMPLESHEET               } from './modules/workflow/get_sheets'
+include { MRS                       } from './modules/workflow/get_MRs'
+include { DMRS                      } from './modules/workflow/get_DMRs'
 
 // modules/process
-include { BUILD_INDEX } from './modules/process/index_genome_matrix'
-include { CALL_MRS    } from './modules/process/call_MRs'
-include { SPLIT_MRS   } from './modules/process/split_MRs'
-include { CALL_DMRS   } from './modules/process/call_DMRs'
-include { MERGE_DMRS  } from './modules/process/merge_DMRs'
+include { IGV } from './modules/process/generate_igv'
 
 workflow {
 
-    contexts = params.DMRS_PER_CONTEXT ? Channel.fromList(params.DMR_CONTEXTS.tokenize(',')) : Channel.of('combined')
-    hmm_params_file = params.MR_PARAMS ? Channel.fromPath(params.MR_PARAMS, checkIfExists: true).collect() : file('null')
-
     CONSENSUS()
 
-    CONSENSUS.out.matrixCHROM
-        .collectFile(cache:true, keepHeader:true, sort:{ it.baseName }, storeDir:"${params.PROJECT_FOLDER}/03matrix"){ chromID, matrix -> [ 'all.genome_matrix.tsv', matrix ]}
-        .map { matrix -> [ matrix.name.minus('.genome_matrix.tsv'), matrix ] }
-        .set{ matrixWG }
+    SAMPLESHEET(CONSENSUS.out.matrixWG)
 
-    matrixWG | SAMPLESHEET
+    def matrix = params.MR_PARAMS ? CONSENSUS.out.matrixCHROM : CONSENSUS.out.matrixWG
 
-    matrix = params.MR_PARAMS ? CONSENSUS.out.matrixCHROM : matrixWG
-
-    BUILD_INDEX(matrix)
-
-    CALL_MRS(
-        SAMPLESHEET.out.indexedSamples.combine(matrix),
-        hmm_params_file
-    )
-
-    if (params.IGV) { MATRIX_TO_IGV(matrixWG, CALL_MRS.out.bed.collect{ it[1] }) }
-
-    SPLIT_MRS(
-        CALL_MRS.out.bed.groupTuple(by:0),
+    MRS(
+        SAMPLESHEET.out.indexedSamples,
+        matrix,
         SAMPLESHEET.out.sheet
     )
 
-    CALL_DMRS(
-        SPLIT_MRS.out.chunks.combine(BUILD_INDEX.out.index, by:0).transpose(by:2),
-        contexts
-    )
+    if (params.IGV) { IGV(matrixWG, MRS.out.mrs.collect()) }
 
-    MERGE_DMRS(
-        CALL_DMRS.out.segments.collectFile(cache:true){ comp, context, segment -> ["${comp}.${context}.dif", segment] },
+    DMRS(
+        MRS.out.chunks,
+        matrix,
         SAMPLESHEET.out.sheet
     )
 }

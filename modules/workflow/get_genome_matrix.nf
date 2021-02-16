@@ -1,4 +1,4 @@
-include { BUILD } from '../../process/build_genome_matrix'
+include { BUILD } from '../process/build_genome_matrix'
 
 workflow MATRIX {
     take:
@@ -16,6 +16,12 @@ workflow MATRIX {
         matrixsheet.collect()
     )
 
+    BUILD.out.matrix
+        .collectFile(cache:true, keepHeader:true, sort:{ it.baseName }, storeDir:"${params.PROJECT_FOLDER}/03matrix"){ chromID, matrix -> [ 'genome_matrix.tsv', matrix ]}
+        .map { matrix -> [ 'all', matrix ] }
+        .set{ matrixWG }
+
     emit:
+    matrixWG
     matrixCHROM = BUILD.out.matrix
 }

@@ -1,6 +1,5 @@
 process CALL_MRS {
     tag "${sampleID}:${matrix}"
-    publishDir "${params.PROJECT_FOLDER}/04MRs/${sampleID}", mode: 'copy'
 
     input:
     tuple val(sampleID), val(sampleIDX), val(chromID), path(matrix)
@@ -9,7 +8,6 @@ process CALL_MRS {
     output:
     tuple val(chromID), val(sampleID), path("*${sampleID}.MRs.bed"), emit: bed
     path("${sampleID}.hmm_params"), optional: true, emit: hmm_params
-    path("*${sampleID}.MR_stats.tsv"), emit: stats
 
     script:
     def HUMAN = params.HUMAN ? "-human" : ""
@@ -29,7 +27,5 @@ process CALL_MRS {
      ${MIN_C} \\
      ${matrix} \\
      ${HMM_PARAMETERS}
-
-    MR_stats.sh ${sampleID} ${chromID}.${sampleID}.MRs.bed
     """
 }

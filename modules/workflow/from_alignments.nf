@@ -1,10 +1,10 @@
-include { GET_SAMPLES } from './sub/get_samples'
+include { GET_SAMPLES } from './get_samples'
+include { MATRIX      } from './get_genome_matrix'
 include { SORT        } from '../process/sort_bam_samtools'
 include { MERGE       } from '../process/MergeSamFiles_picard'
 include { DEDUP       } from '../process/MarkDuplicates_picard'
 include { STATISTICS  } from '../process/get_read_statistics'
 include { SPLIT       } from '../process/split_bam_by_chromosome'
-include { MATRIX      } from './sub/get_genome_matrix'
 
 include { METHYLDACKEL } from '../process/methyldackel'
 
@@ -43,5 +43,6 @@ workflow BAM {
     )
 
     emit:
+    matrixWG = MATRIX.out.matrixWG
     matrixCHROM = MATRIX.out.matrixCHROM
 }

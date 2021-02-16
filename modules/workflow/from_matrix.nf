@@ -6,15 +6,12 @@ workflow MATRIX {
 
     Channel
         .fromPath(params.MATRIX, checkIfExists:true)
-        .set { matrix }
+        .map { matrix -> [ 'all', matrix ] }
+        .set { matrixWG }
 
-    SPLIT(matrix)
-
-    SPLIT.out.matrixCHROM
-     .flatten()
-     .map { matrix -> [ matrix.name.minus('.genome_matrix.tsv'), matrix ] }
-     .set { matrixCHROM }
+    matrixCHROM = params.MR_PARAMS ? matrixWG | SPLIT | flatten | map { matrix -> [ matrix.name.minus('.genome_matrix.tsv'), matrix ] } : Channel.empty()
 
     emit:
+    matrixWG
     matrixCHROM
 }
