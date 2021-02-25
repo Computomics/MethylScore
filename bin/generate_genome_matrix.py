@@ -156,16 +156,14 @@ def convert_to_genome_matrix(path, seq, chromosome, samples, format='bedgraph', 
                 fields = l.split(sep)
 
                 if format == 'bedgraph':
-                    sample, chrom, pos = str(fields[0]), str(fields[1]), int(fields[3])
+                    sample, chrom, pos, meth, unmeth = str(fields[0]), str(fields[1]), int(fields[3]), int(fields[5]), int(fields[6])
                 elif format == "methylpy":
-                    sample, chrom, pos = str(fields[0]), str(fields[1]), int(fields[2])
+                    sample, chrom, pos, meth, unmeth = str(fields[0]), str(fields[1]), int(fields[2]), int(fields[5]), (int(fields[6]) - int(fields[5]))
                 else:
-                    raise NotImplementedError('Only bedGraph and Methylpy format are supported at this time')
+                    raise NotImplementedError('Only bedGraph and methylpy format are supported at this time')
 
                 if (chrom != chromosome) or (pos in skipped_sites):
                     continue
-
-                meth, unmeth = int(fields[5]), int(fields[6])
 
                 try:
                     c = Cytosine(pos, meth, unmeth, reference=seq)
