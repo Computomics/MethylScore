@@ -26,7 +26,7 @@ process CALL_DMRS {
      -n ${params.DMR_MIN_C} \\
      -w ${params.SLIDING_WINDOW_SIZE} \\
      -x ${params.SLIDING_WINDOW_STEP} \\
-     -z 1 \\
+     -z ${task.cpus} \\
      -B $projectDir/bin/betabin_model \\
      -Y $projectDir/bin/pv2qv.py \\
      --no-post-process \\
