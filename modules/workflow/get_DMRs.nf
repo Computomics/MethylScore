@@ -17,9 +17,13 @@ workflow DMRS {
         contexts
     )
 
-    MERGE_DMRS(
-        CALL_DMRS.out.segments.groupTuple(by:[1,2])
-    )
+    CALL_DMRS.out.segments
+        .collectFile(cache:true){ comp, context, segment -> ["${comp}__${context}.dif", segment] }
+        .map { segments -> def keys = segments.baseName.minus('.dif').split('__'); [keys[0], keys[1], segments] }
+        .join(CALL_DMRS.out.sheet, by:[0,1])
+        .set { segments }
+
+    MERGE_DMRS(segments)
 
     emit:
     dmrs = MERGE_DMRS.out.dmrs
