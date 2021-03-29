@@ -1,124 +1,6 @@
 #!/usr/bin/env python
 
-import re
-import gzip
-
-revcomp = str.maketrans("ACGT","TGCA")
-
-CG = re.compile('^CG')
-CHG = re.compile('^C.G')
-CHH = re.compile('^C')
-
-def open_text(path):
-    """Reads a textfile"""
-    if path.endswith('.gz'):
-        return gzip.open(path, 'rt')
-    else:
-        return open(path)
-
-def get_samples(path):
-    """Reads a tsv file with sample names in first column and returns a dict of samples"""
-    samples = {}
-    with open(path) as s:
-        for line in s:
-           id, path = line.split()
-           samples[id] = path
-    return samples
-
-def reference_gen(path):
-    """Returns an iterator over sequences in a fasta file"""
-    def _get_chrom(header):
-        return header.split()[0][1:]
-    seq = ''
-    with open(path) as fa:
-        # first line is always a fasta header
-        c = _get_chrom(fa.readline())
-        for line in fa:
-           if line.startswith('>'):              
-               yield c, seq.upper()
-               c = _get_chrom(line)
-               seq = ''
-           else:
-                seq += line.rstrip('\n')
-    # always yield when the file has been read through
-    yield c, seq.upper()
-
-class Cytosine( ):
-    """
-    A class used to represent a single Cytosine position.
-
-    Attributes
-    ----------
-    pos : int
-        the position on the reference
-    meth : int
-        number of reads supporting a methylated state
-    unmeth : str
-        number of reads not supporting a methylated state
-    context : str
-        the sequence context
-    strand : str
-        the strand position, either Watson (C) or Crick (G)
-
-    Methods
-    -------
-    get_strand(reference)
-        Gets the strand nucleotide at pos on the reference sequence
-
-    get_context(strand)
-        Gets the nucleotide context at pos.
-        Raises ValueError in case of ambiguous contexts or polymorphisms
-
-    get_rate()
-        Gets the methylation rate based on methylated and unmethylated reads
-
-    get_valuestring()
-        Gets a string of the form 40/rate/meth/unmeth for the position
-
-    """
-    def __init__(self, pos, meth, unmeth, context=None, strand=None, reference=None):
-
-        self.pos = pos
-        self.meth = meth
-        self.unmeth = unmeth
-        if reference is not None:
-            self.strand = self.get_strand(reference)
-            self.context = self.get_context(reference, self.strand)
-        else:
-            self.strand = strand
-            self.context = context
-
-    def get_strand(self, reference):
-        return reference[self.pos-1]
-
-    def get_context(self, reference, strand):
-        def _reverse_complement(triplet):
-            return triplet.translate(revcomp)[::-1]
-
-        if strand == 'C':
-            triplet = reference[self.pos-1:self.pos+2]
-        elif strand == 'G':
-            triplet = _reverse_complement(reference[self.pos-3:self.pos])
-        else:
-            raise ValueError(f'position {self.pos} is not a C or G in the reference')
-
-        if 'N' in triplet:
-            raise ValueError(f'triplet {triplet} at pos {self.pos} is ambiguous, skipping')
-
-        if CG.match(triplet):
-            context = "CG"
-        elif CHG.match(triplet):
-            context = "CHG"
-        elif CHH.match(triplet):
-            context = "CHH"
-        return context
-
-    def get_rate(self):
-        return float(self.meth / (self.meth + self.unmeth))*100
-
-    def get_valuestring(self):
-        return f'40/{self.get_rate():.1f}/{self.meth}/{self.unmeth}'
-
+from cytosine import Cytosine, get_input, get_samples, reference_gen 
 
 def convert_to_genome_matrix(path, seq, chromosome, samples, format='bedgraph', verbose=False):
     """Converts per-cytosine methylation information to genome matrix format required by MethylScore
@@ -147,7 +29,7 @@ def convert_to_genome_matrix(path, seq, chromosome, samples, format='bedgraph', 
     values = {}
     prev = None
 
-    with open_text(path) as infile:
+    with get_input(path) as infile:
         with open(f'{chromosome}.genome_matrix.tsv', 'w') as outfile:
             outfile.write(f'#chr\tpos\tclass\tstrand\t{sep.join(samples)}\n')
 
@@ -166,7 +48,7 @@ def convert_to_genome_matrix(path, seq, chromosome, samples, format='bedgraph', 
                     continue
 
                 try:
-                    c = Cytosine(pos, meth, unmeth, reference=seq)
+                    c = Cytosine(chrom, pos, meth, unmeth, reference=seq)
                 except ValueError as e:
                     skipped_sites.add(pos)
                     if verbose:
