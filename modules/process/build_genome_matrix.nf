@@ -14,7 +14,7 @@ process BUILD {
     """
     sort --parallel=${task.cpus} -m -k3,3g -T . ${consensus} > ${fasta.id}.allC
 
-    python ${projectDir}/bin/generate_genome_matrix.py \\
+    generate_genome_matrix.py \\
         --samples ${samplesheet} \\
         --allC ${fasta.id}.allC \\
         --format ${input_format} \\

@@ -12,7 +12,7 @@ process SPLIT_MRS {
     script:
     comp = samplesheet.name.minus('.tsv')
     """
-    perl ${projectDir}/bin/split_MRfile.pl \\
+    split_MRfile.pl \\
         ${samplesheet} \\
         "${comp}.MRbatch" \\
         ${params.MR_BATCH_SIZE}
