@@ -16,12 +16,8 @@ workflow MRS {
         hmm_params_file
     )
 
-    CALL_MRS.out.bed
-        .collectFile(cache:true, storeDir:"${params.PROJECT_FOLDER}/04MRs", sort: { it[0] }){ chrom, sample, bed -> ["${sample}.MRs.bed", bed] }
-        .set { mrs }
-
-    MR_STATISTICS(mrs)
-
+    MR_STATISTICS( CALL_MRS.out.bed.collectFile(cache:true, storeDir:"${params.PROJECT_FOLDER}/04MRs", sort: { it[0] }){ chrom, sample, bed -> ["${sample}.MRs.bed", bed] } )
+ 
     SPLIT_MRS(
         CALL_MRS.out.bed.groupTuple(by:0),
         samplesheet
@@ -29,5 +25,4 @@ workflow MRS {
 
     emit:
     chunks = SPLIT_MRS.out.chunks
-    mrs
 }

@@ -118,7 +118,6 @@ workflow {
 
     DMRS(
         MRS.out.chunks,
-        matrix,
-        SAMPLESHEET.out.sheet
+        matrix
     )
 }

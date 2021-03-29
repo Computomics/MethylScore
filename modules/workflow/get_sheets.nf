@@ -9,7 +9,7 @@ workflow SAMPLESHEET {
 
     GENERATE.out.indexedSamples
         .flatten()
-        .map { sample -> def record = sample.name.toString().tokenize('__'); [ record[0], record[1] as int ] }
+        .map { sample -> def record = sample.name.split('__'); [ record[0], record[1] as int ] }
         .set { indexedSamples }
 
     if ( !params.PAIRWISE ) {
@@ -23,7 +23,7 @@ workflow SAMPLESHEET {
         indexedSamples
             .branch{ sample, index ->
                 A: sample==params.PAIRWISE.toString()
-                B:  sample!=params.PAIRWISE.toString()
+                B: sample!=params.PAIRWISE.toString()
             }
             .set { branched }
 

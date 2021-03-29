@@ -8,7 +8,7 @@ workflow MATRIX {
     main:
 
     samples
-        .collectFile(cache:true, newLine:true, sort:'index'){ sample, bam -> ['samples.tsv', [ sample, sample + '.allC' ].join('\t')] }
+        .collectFile(cache:true, newLine:true, sort:'index'){ sample, consensus -> ['samples.tsv', [ sample, sample + '.allC' ].join('\t')] }
         .set { matrixsheet }
 
     BUILD(

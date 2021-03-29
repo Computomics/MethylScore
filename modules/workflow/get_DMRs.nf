@@ -6,7 +6,6 @@ workflow DMRS {
     take:
     chunks
     matrix
-    samplesheet
 
     main:
     def contexts = params.DMRS_PER_CONTEXT ? Channel.fromList(params.DMR_CONTEXTS.tokenize(',')) : Channel.of('combined')
@@ -19,8 +18,7 @@ workflow DMRS {
     )
 
     MERGE_DMRS(
-        CALL_DMRS.out.segments.collectFile(cache:true){ comp, context, segment -> ["${comp}.${context}.dif", segment] },
-        samplesheet
+        CALL_DMRS.out.segments.groupTuple(by:[1,2])
     )
 
     emit:

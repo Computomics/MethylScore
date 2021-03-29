@@ -7,7 +7,7 @@ process CALL_DMRS {
     each context
 
     output:
-    tuple val(comp), val(context), path("${chunk}.${context}.out/*dif"), optional: true, emit: segments
+    tuple val(comp), val(context), path(samplesheet), path("${chunk}.${context}.out/*dif"), optional: true, emit: segments
 
     script:
     def CLUSTER_MIN_METH = !params.DMRS_PER_CONTEXT ? params.CLUSTER_MIN_METH : params."CLUSTER_MIN_METH_${context}"
