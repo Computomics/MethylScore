@@ -2,8 +2,8 @@
 
 nextflow.enable.dsl=2
 
-include { CONVERT       } from '../../process/benchmark/bedGraph2format'
-include { RUN_METHYLKIT } from '../../process/benchmark/methylKit_DMRs'
+include { CONVERT } from '../../process/benchmark/bedGraph2format'
+include { RUN_DSS } from '../../process/benchmark/dss_DMRs'
 
 workflow DSS {
     take:
@@ -12,10 +12,10 @@ workflow DSS {
     main:
     CONVERT(
         samples,
-        "methylKit"
+        "DSS"
     )
 
-    RUN_METHYLKIT(
+    RUN_DSS(
         CONVERT.out.converted.groupTuple(by:[0,3])
     )
 }
