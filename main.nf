@@ -106,18 +106,16 @@ workflow {
 
     SAMPLESHEET(CONSENSUS.out.matrixWG)
 
-    def matrix = params.MR_PARAMS ? CONSENSUS.out.matrixCHROM : CONSENSUS.out.matrixWG
-
     MRS(
         SAMPLESHEET.out.indexedSamples,
-        matrix,
+        CONSENSUS.out.matrixWG,
         SAMPLESHEET.out.sheet
     )
 
-    if (params.IGV) { IGV(matrixWG, MRS.out.mrs.collect()) }
+    if (params.IGV) { IGV(CONSENSUS.out.matrixWG, MRS.out.mrs.collect()) }
 
     DMRS(
         MRS.out.chunks,
-        matrix
+        CONSENSUS.out.matrixWG
     )
 }
