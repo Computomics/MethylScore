@@ -1,8 +1,6 @@
 process METHYLDACKEL {
     tag "${sampleID}:${fasta.id}"
-
-    publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy',
-       saveAs: { filename -> filename.endsWith(".svg") ? "mbias/${filename}" : !params.REMOVE_INTMED_FILES ? "${sampleID}/${fasta.id}/${filename}" : null }
+    publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy', saveAs: { filename -> filename.endsWith(".svg") ? "mbias/${filename}" : !params.REMOVE_INTMED_FILES ? "${sampleID}/${fasta.id}/${filename}" : null }
 
     input:
     tuple val(fasta), val(sampleID), path(bamsplit)
