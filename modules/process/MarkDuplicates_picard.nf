@@ -1,5 +1,6 @@
 process DEDUPLICATE {
     tag "${sampleID}"
+    label "resource_high"
     publishDir "${params.PROJECT_FOLDER}/01mappings/deduplicated/${sampleID}", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:

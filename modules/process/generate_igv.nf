@@ -1,5 +1,6 @@
 process IGV {
     tag "${bed}"
+    label "resource_low"
     publishDir "${params.PROJECT_FOLDER}/igv", mode: 'copy'
 
     input:

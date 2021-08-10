@@ -1,5 +1,6 @@
 process MR_STATISTICS {
     tag "${sampleID}"
+    label "resource_low"
     publishDir "${params.PROJECT_FOLDER}/04MRs/stats", mode: 'copy'
 
     input:

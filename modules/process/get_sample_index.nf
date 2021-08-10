@@ -1,6 +1,6 @@
 process GENERATE {
     tag "${matrix}"
-
+    label "resource_low"
     input:
     tuple val(chromID), path(matrix)
 

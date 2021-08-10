@@ -1,5 +1,6 @@
 process MERGE_BAM {
     tag "${sampleID}:${bam}"
+    label "resource_medium"
     publishDir "${params.PROJECT_FOLDER}/01mappings/merged/${sampleID}", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:

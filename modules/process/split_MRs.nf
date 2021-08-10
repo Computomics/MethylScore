@@ -1,5 +1,6 @@
 process SPLIT_MRS {
     tag "${chromID}:batchsize:${params.MR_BATCH_SIZE}"
+    label "resource_medium"
     publishDir "${params.PROJECT_FOLDER}/05DMRs/${comp}/batches", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:

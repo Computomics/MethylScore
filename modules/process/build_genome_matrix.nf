@@ -1,5 +1,6 @@
 process BUILD {
     tag "${fasta.id}"
+    label "resource_high"
     publishDir "${params.PROJECT_FOLDER}/03matrix/", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:

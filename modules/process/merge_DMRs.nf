@@ -1,5 +1,6 @@
 process MERGE_DMRS {
     tag "${context}:${samplesheet.baseName}"
+    label "resource_low"
     publishDir "${params.PROJECT_FOLDER}/05DMRs/${samplesheet.baseName}", mode: 'copy'
 
     input:

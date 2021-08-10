@@ -1,5 +1,6 @@
 process SORT_BAM {
     tag "${sampleID}"
+    label "resource_high"
     publishDir "${params.PROJECT_FOLDER}/01mappings/sorted/${sampleID}", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:

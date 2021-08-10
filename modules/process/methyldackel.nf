@@ -1,5 +1,6 @@
 process METHYLDACKEL {
     tag "${sampleID}:${fasta.id}"
+    label "resource_medium"
     publishDir "${params.PROJECT_FOLDER}/02consensus", mode: 'copy', saveAs: { filename -> filename.endsWith(".svg") ? "mbias/${filename}" : !params.REMOVE_INTMED_FILES ? "${sampleID}/${fasta.id}/${filename}" : null }
 
     input:

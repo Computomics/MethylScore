@@ -1,5 +1,6 @@
 process SPLIT_BEDGRAPH {
     tag "${sampleID}:${fasta.id}"
+    label "resource_low"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}/split/${fasta.id}/", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:

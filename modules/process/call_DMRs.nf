@@ -1,5 +1,6 @@
 process CALL_DMRS {
     tag "${context}:${chunk}"
+    label "resource_medium"
     publishDir "${params.PROJECT_FOLDER}/05DMRs/${comp}/batches", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:

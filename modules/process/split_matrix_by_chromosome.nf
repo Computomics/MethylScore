@@ -1,5 +1,6 @@
 process SPLIT_MATRIX {
     tag "${matrix}"
+    label "resource_low"
     publishDir "${params.PROJECT_FOLDER}/03matrix/", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
 
     input:
