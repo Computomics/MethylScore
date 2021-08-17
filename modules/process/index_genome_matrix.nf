@@ -1,7 +1,7 @@
 process INDEX {
     tag "${matrix}"
     label "resource_medium"
-    publishDir "${params.PROJECT_FOLDER}/03matrix/", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
+    publishDir "${params.PROJECT_FOLDER}/03matrix/", mode: 'copy'
 
     input:
     tuple val(chromID), path(matrix)

@@ -17,7 +17,7 @@ workflow MATRIX {
     )
 
     BUILD.out.matrix
-        .collectFile(cache:true, keepHeader:true, sort:{ it.baseName }, storeDir:"${params.PROJECT_FOLDER}/03matrix"){ chromID, matrix -> [ 'genome_matrix.tsv', matrix ]}
+        .collectFile(cache:true, keepHeader:true, sort:{ it.baseName }){ chromID, matrix -> [ 'genome_matrix.tsv', matrix ]}
         .map { matrix -> [ 'all', matrix ] }
         .set{ matrixWG }
 
