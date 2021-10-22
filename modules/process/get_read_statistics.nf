@@ -1,7 +1,7 @@
 process READ_STATISTICS {
     tag "${sampleID}"
     label "resource_medium"
-    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy', enabled: !params.REMOVE_INTMED_FILES
+    publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
     tuple val(sampleID), path(bam)
