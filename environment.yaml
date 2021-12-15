@@ -6,8 +6,7 @@ channels:
 dependencies:
   - conda-forge::numpy=1.19.1
   - bioconda::samtools=1.9
-  - bioconda::tabix=0.2.6
   - bioconda::bamtools=2.5.1
   - bioconda::bedtools=2.29.2
-  - bioconda::picard=2.23.3
+  - bioconda::picard-slim=2.26.7
   - bioconda::MethylDackel=0.4.0
