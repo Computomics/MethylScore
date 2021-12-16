@@ -23,7 +23,7 @@ FROM mambaorg/micromamba:0.19.1
 
 COPY --from=BUILDER /usr/local /usr/local
 COPY --from=BUILDER /MethylScore/src/hmm_mrs/src/analysis/hmm_mrs /MethylScore/bin/betabin_model /usr/local/bin/
-COPY --chown=micromamba:micromamba environment.yaml /tmp/environment.yaml
+COPY environment.yaml /tmp/environment.yaml
 
 USER root
 RUN apt-get update \
@@ -31,6 +31,6 @@ RUN apt-get update \
 	procps perl libconfig-simple-perl libfile-which-perl libfile-tee-perl libthread-conveyor-perl libthread-pool-perl \
 	&& apt-get clean -y \
 	&& rm -rf /var/lib/{apt,dpkg,cache,log}
-USER micromamba
 
 RUN micromamba install -y -n base -f /tmp/environment.yaml && micromamba clean -a
+ENV PATH "$MAMBA_ROOT_PREFIX/bin:$PATH"
