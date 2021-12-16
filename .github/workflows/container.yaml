@@ -18,7 +18,7 @@ jobs:
         run: podman login -u ${{ secrets.REGISTRY_USER }} -p ${{ secrets.REGISTRY_PASS }} quay.io
 
       - name: Build container
-        run: podman build --tag beckerlab/methylscore .
+        run: podman build --format docker --tag beckerlab/methylscore .
 
       - name: Push container
         run: podman push beckerlab/methylscore docker://quay.io/beckerlab/methylscore:${GITHUB_REF##*/}
