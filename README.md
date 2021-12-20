@@ -6,6 +6,7 @@
 MethylScore is a pipeline to call differentially methylated regions between samples obtained from Whole Genome Bisulfite Sequencing (WGBS).
 
 ## Pipeline summary
+
 MethylScore starts from bam files containing alignments of bisulfite-sequenced reads to a reference genome, produced by bisulfite read
 alignment tools such as _[bismark](https://github.com/FelixKrueger/Bismark/)_ and _[bwa_meth](https://github.com/brentp/bwa-meth)_.
 Alternatively, bedGraph files with pre-tabulated methylation information as they are produced by _[MethylDackel extract](https://github.com/dpryan79/MethylDackel#single-cytosine-methylation-metrics-extraction)_ or _[bismark methylation extractor](https://github.com/FelixKrueger/Bismark/tree/master/Docs#iv-running-bismark_methylation_extractor)_.
@@ -268,7 +269,7 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
 
 <details>
  <summary>--DESERT_SIZE <code>default: 100</code></summary>
-  If a region spans more than this distance in base pairs without covered cytosines, break segment and rather start separate HMM path.
+  If a region spans more than <code>DESERT_SIZE</code> bp without covered cytosines, break segment and rather start separate HMM path.
 </details>
 
 <details>
@@ -278,7 +279,7 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
 
 <details>
  <summary>--MERGE_DIST <code>default: 30</code></summary>
-  Merge MRs that are MERGE_DIST bp close to each other.
+  Merge MRs that are <code>MERGE_DIST</code> bp close to each other.
 </details>
 
 <details>
@@ -294,20 +295,18 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
 
 <details>
  <summary>--SLIDING_WINDOW_SIZE <code>default: 0</code></summary>
- If set to a value greater than 0, applies sliding window of that size along segmented regions to breakdown candidate regions to test.
+ If set to a value greater than 0, applies sliding window of width <code>SLIDING_WINDOW_SIZE</code> along segmented regions to breakdown candidate regions to test.
 </details>
 
 <details>
  <summary>--SLIDING_WINDOW_STEP <code>default: 0</code></summary>
- If SLIDING_WINDOW_SIZE and SLIDING_WINDOW_STEP are set to values greater than 0, applies sliding window of size SLIDING_WINDOW_SIZE along selected regions to breakdown candidate regions to test,
- using a step size of SLIDING_WINDOW_SIZE
+ If <code>SLIDING_WINDOW_SIZE</code>  and <code>SLIDING_WINDOW_STEP</code> are set to values greater than 0, applies sliding window of size <code>SLIDING_WINDOW_SIZE</code> along selected regions to breakdown candidate regions to test, using a step size of <code>SLIDING_WINDOW_STEP</code> 
 </details>
 
 <details>
  <summary>--HUMAN <code>default: false</code></summary>
  If set to true, the segmentation will select hypomethylated regions instead of methylated regions.
  Useful if analysing human data.
- default: false
 </details>
 
 <details>
@@ -330,15 +329,15 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
 <details>
  <summary>--CLUSTER_MIN_METH_DIFF{_CG,_CHG,_CHH} <code>default: 20</code></summary>
  Minimum methylation level differences per context between any pair of sample clusters.
- CLUSTER_MIN_METH_DIFF_CG,CLUSTER_MIN_METH_DIFF_CHG CLUSTER_MIN_METH_DIFF_CHH only apply
- when DMRS_PER_CONTEXT is set to true.
+ <code>CLUSTER_MIN_METH_DIFF_CG</code>,<code>CLUSTER_MIN_METH_DIFF_CHG</code> and <code>CLUSTER_MIN_METH_DIFF_CHH</code> only apply
+ when <code>DMRS_PER_CONTEXT</code> is set to true.
 </details>
 
 <details>
  <summary>--CLUSTER_MIN_METH{_CG,_CHG,_CHH} <code>default: 20</code></summary>
  Minimum methylation level of any sample cluster per context.
- CLUSTER_MIN_METH_CG,CLUSTER_MIN_METH_CHG CLUSTER_MIN_METH_CHH only apply
- when DMRS_PER_CONTEXT is set to true.
+ <code>CLUSTER_MIN_METH_CG</code>,<code>CLUSTER_MIN_METH_CHG</code> and <code>CLUSTER_MIN_METH_CHH</code> only apply
+ when <code>DMRS_PER_CONTEXT</code> is set to true.
 </details>
 
 <details>
@@ -348,7 +347,7 @@ Minimum read coverage of cytosines within (candidate) DMRs.
 
 <details>
  <summary>--DMR_MIN_C <code>default: 5</code></summary>
- Minimum number of cytosines exceeding DMR_MIN_COV that are required within (candidate) DMRs.
+ Minimum number of cytosines exceeding <code>DMR_MIN_COV</code> that are required within (candidate) DMRs.
 </details>
 
 <details>
