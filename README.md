@@ -21,6 +21,8 @@ are determined by a two-state Hidden Markov Model (HMM)-based method that learns
 Finally, to obtain significant differences in methylation on a regional scale between different samples, MethylScore clusters samples by methylation levels and statistically tests the
 groupwise methylation distributions for significant differences.
 
+![Overview](assets/pipeline_overview.svg)
+
 ## Usage
 
 ### Getting started
