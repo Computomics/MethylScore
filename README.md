@@ -5,9 +5,10 @@
 
 MethylScore is a pipeline to call differentially methylated regions between samples obtained from Whole Genome Bisulfite Sequencing (WGBS).
 
-## Pipeline strategy
-MethylScore starts from either bam files containing alignments of bisulfite-sequenced reads to a reference genome, produced by bisulfite read
-alignment tools such as _[bismark](https://github.com/FelixKrueger/Bismark/_ and _[bwa_meth](https://github.com/brentp/bwa-meth)_, or bedGraph files with pre-tabulated methylation information as they are produced by _[MethylDackel extract](https://github.com/dpryan79/MethylDackel#single-cytosine-methylation-metrics-extraction)_ or _[bismark methylation extractor](https://github.com/FelixKrueger/Bismark/tree/master/Docs#iv-running-bismark_methylation_extractor)_.
+## Pipeline summary
+MethylScore starts from bam files containing alignments of bisulfite-sequenced reads to a reference genome, produced by bisulfite read
+alignment tools such as _[bismark](https://github.com/FelixKrueger/Bismark/)_ and _[bwa_meth](https://github.com/brentp/bwa-meth)_.
+Alternatively, bedGraph files with pre-tabulated methylation information as they are produced by _[MethylDackel extract](https://github.com/dpryan79/MethylDackel#single-cytosine-methylation-metrics-extraction)_ or _[bismark methylation extractor](https://github.com/FelixKrueger/Bismark/tree/master/Docs#iv-running-bismark_methylation_extractor)_.
 
 If genomic alignments are supplied as an input, mapped reads from technical replicates are first merged and coordinate-sorted using _samtools sort_, and the mappings for each sample are de-duplicated using _picard MarkDuplicates_.
 For concurrent processing, the alignments are then split by chromosome, and, for each sample and chromosome, the numbers of methylated/unmethylated reads per position (pileup information) are retrieved using
@@ -83,7 +84,7 @@ The pipeline will create a output directory structure that looks like the follow
 ├── 05DMRs
 │    └── all
 │        ├── DMRs.CG.bed
-│        |-- DMRs.CHG.bed
+│        ├── DMRs.CHG.bed
 │        └── DMRs.CHH.bed
 ├── MethylScore_graph.png
 ├── MethylScore_report.html
@@ -93,17 +94,17 @@ The pipeline will create a output directory structure that looks like the follow
 #### 01mappings
 
 Contains alignment statistics for each sample.
-Sorted and de-duplicated bam files are optionally stored in this directory (if run with `--REMOVE_INTMED_FILES = false`).
+Sorted and de-duplicated bam files are optionally stored in this directory (if run with `--REMOVE_INTMED_FILES false`).
 
 #### 02consensus
 
 Contains mbias plots showing methylation with respect to position along the sequencing reads that should be used to (re-)assess read trimming settings as needed.
-Single-cytosine pileup information for each sample is optionally stored in this directory (if run with `--REMOVE_INTMED_FILES = false`).
+Single-cytosine pileup information for each sample is optionally stored in this directory (if run with `--REMOVE_INTMED_FILES false`).
 
 #### 03matrix
 
 Contains the merged whole genome matrix across all samples as a bgzip compressed file, along with the corresponding tabix index.
-The genome matrix for each chromosome are optionally stored in this directory (if run with `--REMOVE_INTMED_FILES = false`).
+The genome matrix for each chromosome are optionally stored in this directory (if run with `--REMOVE_INTMED_FILES false`).
 
 #### 04MRs
 
