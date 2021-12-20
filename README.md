@@ -5,7 +5,7 @@
 
 MethylScore is a pipeline to call differentially methylated regions between samples obtained from Whole Genome Bisulfite Sequencing (WGBS).
 
-# Pipeline strategy
+## Pipeline strategy
 MethylScore starts from either bam files containing alignments of bisulfite-sequenced reads to a reference genome, produced by bisulfite read
 alignment tools such as _[bismark](https://github.com/FelixKrueger/Bismark/_ and _[bwa_meth](https://github.com/brentp/bwa-meth)_, or bedGraph files with pre-tabulated methylation information as they are produced by _[MethylDackel extract](https://github.com/dpryan79/MethylDackel#single-cytosine-methylation-metrics-extraction)_ or _[bismark methylation extractor](https://github.com/FelixKrueger/Bismark/tree/master/Docs#iv-running-bismark_methylation_extractor)_.
 
@@ -19,14 +19,14 @@ are determined by a two-state Hidden Markov Model (HMM)-based method that learns
 Finally, to obtain significant differences in methylation on a regional scale between different samples, MethylScore clusters samples by methylation levels and statistically tests the
 groupwise methylation distributions for significant differences.
 
-# Usage
+## Usage
 
-## Getting started
+### Getting started
 
 All software dependencies required by MethylScore are provided in a [Docker container](quay.io/beckerlab/methylscore:nextflow), the only requirements to run MethylScore are [Nextflow](https://www.nextflow.io/),
 and a supported container engine ([Singularity](https://www.sylabs.io/singularity/), [Docker](https://www.docker.com/), [Charliecloud](https://hpc.github.io/charliecloud/) or [Podman](https://podman.io/)).
 
-## Pipeline input
+### Pipeline input
 
 MethylScore requires a samplesheet. It serves to create a mapping between sample identifiers and corresponding file locations of input files and should consist of two columns:
 
@@ -48,7 +48,7 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=/path/to/samplesheet.tsv --G
 nextflow run Computomics/MethylScore --BEDGRAPH --SAMPLE_SHEET=/path/to/samplesheet.tsv --GENOME=/path/to/reference_genome.fa -profile docker
 ```
 
-## Pipeline output
+### Pipeline output
 
 The pipeline will create a output directory structure that looks like the following:
 
@@ -90,36 +90,36 @@ The pipeline will create a output directory structure that looks like the follow
 └── MethylScore_trace.txt     
 ```
 
-### 01mappings
+#### 01mappings
 
 Contains alignment statistics for each sample.
 Sorted and de-duplicated bam files are optionally stored in this directory (if run with `--REMOVE_INTMED_FILES = false`).
 
-### 02consensus
+#### 02consensus
 
 Contains mbias plots showing methylation with respect to position along the sequencing reads that should be used to (re-)assess read trimming settings as needed.
 Single-cytosine pileup information for each sample is optionally stored in this directory (if run with `--REMOVE_INTMED_FILES = false`).
 
-### 03matrix
+#### 03matrix
 
 Contains the merged whole genome matrix across all samples as a bgzip compressed file, along with the corresponding tabix index.
 The genome matrix for each chromosome are optionally stored in this directory (if run with `--REMOVE_INTMED_FILES = false`).
 
-### 04MRs
+#### 04MRs
 
 Contains genomic coordinates of methylated regions (MRs) as they were segmented by the Hidden Markov Model, along with associated region-based metrics.
 The parameters obtained from training the model on each sample are stored and can be used to reduce computational burden in subsequent pipeline runs.
 
 The coordinates are stored in bed format, with the following columns:
 
-column 1: chromosome ID
-column 2: (1-based) start position
-column 3: (1-based) end position, half-open (i.e. this position is not part of the region)
-column 4: Number of covered cytosines in MR
-column 5: Mean read depth in MR
-column 6: 5th percentile of read depth in MR
-column 7: Mean methylation rate of cytosines within MR
-column 8: SampleID
+column 1: chromosome ID<br>
+column 2: (1-based) start position<br>
+column 3: (1-based) end position, half-open (i.e. this position is not part of the region)<br>
+column 4: Number of covered cytosines in MR<br>
+column 5: Mean read depth in MR<br>
+column 6: 5th percentile of read depth in MR<br>
+column 7: Mean methylation rate of cytosines within MR<br>
+column 8: SampleID<br>
 
 Example:
 
@@ -128,24 +128,24 @@ Example:
 |  Chr1  |  597  | 651  |  23  |  11  |  12 |  12 |  S1 |
 |  Chr1  |  763  | 956  |  52  |   5  |   9 |  51 |  S1 |
 
-### 05DMRs
+#### 05DMRs
 
 Contains genomic coordinates of differentially methylated regions (DMRs) that were determined as significantly different between sample clusters, after candidate region selection from MRs followed by statistical testing.
 
-column 1: chromosome ID
-column 2: (1-based) start position
-column 3: (1-based) end position, half-open (i.e. this position is not part of the region)
-column 4: Length in bp
-column 5: Cluster-String, one symbol per sample:
-    * `1`,`2`,`3`,`...` = cluster ID
-    * `.` = sample is not covered at all positions within region
-    * `-` = sample is not sufficiently covered at all positions within region (at least `DMR_MIN_C` positions with a minimum read depth of `DMR_MIN_COV`-fold are required)
-column 6: Mean methylation rate of total sites, and of sites in the contexts CG, CHG, CHH (in this order) for cluster 1, comma-separated and preceded by the cluster ID and ":" (1:...)
-column 7: Mean methylation rate of total sites, and of sites in the contexts CG, CHG, CHH (in this order) for cluster 2, comma-separated and preceded by the cluster ID and ":" (2:...)
-column 8 to n-3: Potentially more mean methylation rates if there are more than 2 clusters
-column n-2: Number of total sites, and of sites in the contexts CG, CHG, CHH (in this order), comma-separated, and preceded by "#:"
-column n-1: Differentially methylated context
-column n: Highly differentially methylated context
+column 1: chromosome ID<br>
+column 2: (1-based) start position<br>
+column 3: (1-based) end position, half-open (i.e. this position is not part of the region)<br>
+column 4: Length in bp<br>
+column 5: Cluster-String, one symbol per sample:<br>
+    * `1`,`2`,`3`,`...` = cluster ID<br>
+    * `.` = sample is not covered at all positions within region<br>
+    * `-` = sample is not sufficiently covered at all positions within region (at least `DMR_MIN_C` positions with a minimum read depth of `DMR_MIN_COV`-fold are required)<br>
+column 6: Mean methylation rate of total sites, and of sites in the contexts CG, CHG, CHH (in this order) for cluster 1, comma-separated and preceded by the cluster ID and ":" (1:...)<br>
+column 7: Mean methylation rate of total sites, and of sites in the contexts CG, CHG, CHH (in this order) for cluster 2, comma-separated and preceded by the cluster ID and ":" (2:...)<br>
+column 8 to n-3: Potentially more mean methylation rates if there are more than 2 clusters<br>
+column n-2: Number of total sites, and of sites in the contexts CG, CHG, CHH (in this order), comma-separated, and preceded by "#:"<br>
+column n-1: Differentially methylated context<br>
+column n: Highly differentially methylated context<br>
 
 Example:
 
@@ -154,7 +154,7 @@ Example:
 |   Chr1 |  42255 | 42409 | 155  | 11.21-211 | 1:17,20,0,12 | 2:75,80,0,28 |        1:S1,S3,...     |   2:S2,S6,...  | #:30,14,3,13 | CG,CHH |   CHH  |
 
 
-## Pipeline parameters
+### Pipeline parameters
 
 Pipeline parameters can either be configured using a [parameter file](https://github.com/Computomics/MethylScore/raw/nextflow/example_config.yaml), or 
 individual parameters can be passed to the pipeline on the commandline.
@@ -170,7 +170,7 @@ Alternatively, the repository contains a template [example_config.yaml](https://
 nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=genome.fa -params-file=/path/to/config.yaml -profile podman
 ```
 
-### General parameters
+#### General parameters
 
 <details>
  <summary>--SAMPLE_SHEET <code>required</code></summary>
@@ -248,7 +248,7 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
   Only applies when running from bam input.
 </details>
 
-### MR parameters
+#### MR parameters
 
 <details>
  <summary>--MIN_COVERAGE <code>default: 1</code></summary>
@@ -314,7 +314,7 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
   Number of MR blocks per file.
 </details>
 
-### DMR parameters:
+#### DMR parameters:
 
 <details>
  <summary>--DMRS_PER_CONTEXT <code>default: true</code></summary>
