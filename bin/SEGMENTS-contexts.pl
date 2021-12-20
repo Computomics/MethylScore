@@ -46,8 +46,8 @@ my $post_process = 1;
 my $tabix_exec="";
 my $bgzip_exec="";
 my $test_binary = "betabin_model";
-my $test_exec="$Bin/$test_binary";
 my $python_exec="python";
+my $test_exec="";
 my $qv_exec="";
 
 my $DO_TESTING = 1;
@@ -1325,9 +1325,8 @@ Copyright (C) 2016-2020, Computomics GmbH
 
   ###### CHECKING BETABIN_MODEL:
   if (defined($CMD{B})) { $test_exec = $CMD{B}; }
-  if (! -e "$test_exec") {
-      die "\n{DMRcalling} Cannot find statistical test binary '$test_binary'!\n";
-  }
+  elsif (-e "$Bin/$test_binary") { $test_exec = "$Bin/$test_binary" }
+  else { die "\n{DMRcalling} Cannot find statistical test binary '$test_binary'!\n"; }
 
   ###### CHECKING pv2qv:
   if (defined($CMD{Y})) { $qv_exec = $CMD{Y}; }

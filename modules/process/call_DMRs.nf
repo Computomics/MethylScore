@@ -29,7 +29,7 @@ process CALL_DMRS {
         -w ${params.SLIDING_WINDOW_SIZE} \\
         -x ${params.SLIDING_WINDOW_STEP} \\
         -z ${task.cpus} \\
-        -B $projectDir/bin/betabin_model \\
+        -B betabin_model \\
         -Y $projectDir/bin/pv2qv.py \\
         --no-post-process \\
         -o ${chunk}.${context}.out
