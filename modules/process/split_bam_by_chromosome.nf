@@ -14,7 +14,7 @@ process SPLIT_BAM {
     """
     samtools index ${bam}
     cat <(samtools view -H ${bam} | grep -E "@HD|SN:${fasta.id}\$(printf '\\t')") \\
-        <(samtools view ${bam} ${fasta.id}) \\
+        <(samtools view ${bam} "${fasta.id}") \\
         | samtools view -bo ${fasta.id}.bam -
     """
 }
