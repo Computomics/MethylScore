@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import csv
 import argparse
 import gzip
@@ -155,3 +156,4 @@ def iterThroughMR(mrFile, goUntil, actualMRLine, parser):
 
 if __name__ == '__main__':
     main()
+

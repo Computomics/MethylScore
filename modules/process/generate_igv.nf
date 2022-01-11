@@ -12,8 +12,8 @@ process IGV {
 
     script:
     """
-    sort -m -k1,1 -k2,2g -k3,3g ${bed} > MRs.merged.bed
-    python matrix2igv.py  \\
+    sort -m -k1,1 -k2,2g -k3,3g *.MRs.bed > MRs.merged.bed
+    matrix2igv.py  \\
         -i ${matrixWG} \\
         -m MRs.merged.bed \\
         -o methinfo.igv

@@ -97,9 +97,6 @@ include { SAMPLESHEET               } from './modules/workflow/get_sheets'
 include { MRS                       } from './modules/workflow/get_MRs'
 include { DMRS                      } from './modules/workflow/get_DMRs'
 
-// modules/process
-include { IGV } from './modules/process/generate_igv'
-
 workflow {
 
     CONSENSUS()
@@ -111,8 +108,6 @@ workflow {
         CONSENSUS.out.matrixWG,
         SAMPLESHEET.out.sheet
     )
-
-    if (params.IGV) { IGV(CONSENSUS.out.matrixWG, MRS.out.mrs.collect()) }
 
     DMRS(
         MRS.out.chunks,

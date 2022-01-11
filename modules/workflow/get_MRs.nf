@@ -1,6 +1,7 @@
 include { CALL_MRS      } from '../process/call_MRs'
 include { MR_STATISTICS } from '../process/get_MR_statistics'
 include { SPLIT_MRS     } from '../process/split_MRs'
+include { IGV           } from '../process/generate_igv'
 
 workflow MRS {
     take:
@@ -16,7 +17,11 @@ workflow MRS {
         hmm_params_file
     )
 
-    MR_STATISTICS( CALL_MRS.out.bed.collectFile(cache:true, storeDir:"${params.PROJECT_FOLDER}/04MRs", sort: { it[0] }){ chrom, sample, bed -> ["${sample}.MRs.bed", bed] } )
+    def mrs = CALL_MRS.out.bed.collectFile(cache:true, storeDir:"${params.PROJECT_FOLDER}/04MRs", sort: { it[0] }){ chrom, sample, bed -> ["${sample}.MRs.bed", bed] }
+
+    if ( params.IGV ) { IGV(matrix, mrs.collect()) }
+
+    MR_STATISTICS(mrs)
 
     SPLIT_MRS(
         CALL_MRS.out.bed.groupTuple(by:0),
