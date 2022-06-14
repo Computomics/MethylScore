@@ -19,7 +19,7 @@ process CALL_MRS {
     hmm_mrs \\
         -x ${sampleIDX} \\
         -y ${sampleID} \\
-        -c ${params.MIN_COVERAGE} \\
+        -c ${params.MR_MIN_COV} \\
         -o ${sampleID}.MRs.bed \\
         -d ${params.DESERT_SIZE} \\
         -i 30 \\

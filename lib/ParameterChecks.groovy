@@ -31,7 +31,7 @@ class ParameterChecks {
     assert params.MIN_QUAL instanceof Integer && params.MIN_QUAL in 1..40, "MIN_QUAL must be between 1 and 40!"
     assert params.IGNORE_OT ==~ /[0-9]+,[0-9]+,[0-9]+,[0-9]+/, "IGNORE_OT must be four comma separated integers!"
     assert params.IGNORE_OB ==~ /[0-9]+,[0-9]+,[0-9]+,[0-9]+/, "IGNORE_OB must be four comma separated integers!"
-    assert params.MIN_COVERAGE instanceof Integer && params.MIN_COVERAGE > 0, "MIN_COVERAGE must be a non-negative integer!"
+    assert params.MR_MIN_COV instanceof Integer && params.MR_MIN_COV > 0, "MR_MIN_COV must be a non-negative integer!"
     assert params.DESERT_SIZE instanceof Integer && params.DESERT_SIZE > 0, "DESERT_SIZE must be a non-negative integer!"
     assert params.MERGE_DIST instanceof Integer && params.MERGE_DIST > 0, "MERGE_DIST must be a non-negative integer!"
     assert params.MR_MIN_C instanceof Integer, "MR_MIN_C must be an integer! Negative value turns on permutation test."

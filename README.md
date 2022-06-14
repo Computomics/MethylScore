@@ -255,7 +255,7 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
 #### MR parameters
 
 <details>
- <summary>--MIN_COVERAGE <code>default: 1</code></summary>
+ <summary>--MR_MIN_COV <code>default: 1</code></summary>
   Minimum per-site coverage to consider
 </details>
 

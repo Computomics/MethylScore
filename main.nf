@@ -66,7 +66,7 @@ HDMR_FOLD_CHANGE          : ${params.HDMR_FOLD_CHANGE}
 IGNORE_OT                 : ${(params.BEDGRAPH || params.MATRIX) ? "ignored" : params.IGNORE_OT}
 IGNORE_OB                 : ${(params.BEDGRAPH || params.MATRIX) ? "ignored" : params.IGNORE_OB}
 MERGE_DIST                : ${params.MERGE_DIST}
-MIN_COVERAGE              : ${params.MIN_COVERAGE}
+MR_MIN_COV                : ${params.MR_MIN_COV}
 MIN_QUAL                  : ${(params.BEDGRAPH || params.MATRIX) ? "ignored" : params.MIN_QUAL }
 MR_BATCH_SIZE             : ${params.MR_BATCH_SIZE}
 MR_FREQ_CHANGE            : ${params.MR_FREQ_CHANGE}

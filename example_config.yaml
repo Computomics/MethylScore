@@ -100,7 +100,7 @@ HDMR_FOLD_CHANGE : 3
 ### MR options:
 
 # minimum per-site coverage to consider
-MIN_COVERAGE : 1
+MR_MIN_COV : 1
 
 # don't span a region of this minimum size without covered cytosines, rather start separate HMM path
 DESERT_SIZE : 100
