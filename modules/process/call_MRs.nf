@@ -1,6 +1,6 @@
 process CALL_MRS {
     tag "${sampleID}:${matrix}"
-    label "resource_medium"
+    label "resource_high"
     publishDir "${params.PROJECT_FOLDER}/04MRs", mode: 'copy', enabled: !params.MR_PARAMS, saveAs: { filename -> filename.endsWith(".hmm_params") ? "hmm_parameters/${filename}" : null }
 
     input:

@@ -1,6 +1,6 @@
 process READ_STATISTICS {
     tag "${sampleID}"
-    label "resource_medium"
+    label "resource_low"
     publishDir "${params.PROJECT_FOLDER}/01mappings/${sampleID}", mode: 'copy'
 
     input:
