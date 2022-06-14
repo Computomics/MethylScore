@@ -174,6 +174,8 @@ Alternatively, the repository contains a template [example_config.yaml](https://
 nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=genome.fa -params-file=/path/to/config.yaml -profile podman
 ```
 
+
+
 #### General parameters
 
 <details>
@@ -214,7 +216,7 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
 
 <details>
  <summary>--PROJECT_FOLDER <code>default: './results'</code></summary>
- Path to sample sheet.
+ Output path where results will be stored.
 </details>
 
 <details>
@@ -261,7 +263,8 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
 
 <details>
  <summary>--MR_FREQ_CHANGE <code>default: 20</code></summary>
- Percent MR frequency change (across all samples) leading to segment break.
+ Percent MR frequency change (across all samples) leading to segment break, indicative of natural region boundaries that are widespread in the sample population.
+ This parameter should be adjusted to lower values if identification of regions with less frequent changes (i.e lower "epiallele-frequency") in the population is desired.
 </details>
 
 <details>
@@ -272,6 +275,7 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
 <details>
  <summary>--DESERT_SIZE <code>default: 100</code></summary>
   If a region spans more than <code>DESERT_SIZE</code> bp without covered cytosines, break segment and rather start separate HMM path.
+  This prevents extending MRs over stretches of missing data.
 </details>
 
 <details>
@@ -333,6 +337,8 @@ nextflow run Computomics/MethylScore --SAMPLE_SHEET=samplesheet.tsv --GENOME=gen
  Minimum methylation level differences per context between any pair of sample clusters.
  <code>CLUSTER_MIN_METH_DIFF_CG</code>,<code>CLUSTER_MIN_METH_DIFF_CHG</code> and <code>CLUSTER_MIN_METH_DIFF_CHH</code> only apply
  when <code>DMRS_PER_CONTEXT</code> is set to true.
+ For each candidate region, cluster centers are searched to minimize the within-group variance. The value of k is iteratively incremented starting from k = 2, until the pairwise comparison of all cluster centers results in a methylation difference of less than <code>CLUSTER_MIN_METH_DIFF</code>.
+ This effectively discards likely irrelevant DMRs with only a few percentage points methylation difference.
 </details>
 
 <details>
