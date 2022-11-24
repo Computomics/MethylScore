@@ -32,7 +32,7 @@ and a supported container engine ([Singularity](https://www.sylabs.io/singularit
 
 ### Pipeline input
 
-MethylScore requires a samplesheet. It serves to create a mapping between sample identifiers and corresponding file locations of input files and should consist of two columns:
+MethylScore requires a samplesheet. It serves to create a mapping between sample identifiers and corresponding file locations of input files and should consist of two columns separated by tabs (column headers are not required):
 
 | sampleID |             path            |
 | -------- | --------------------------- |
