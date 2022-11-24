@@ -106,7 +106,7 @@ class Cytosine():
             raise ValueError(f'position {self.pos} is not a C or G in the reference')
 
     def get_context(self):
-        if 'N' in self.triplet:
+        if 'N' in self.triplet or len(self.triplet) != 3:
             raise ValueError(f'triplet {self.triplet} at pos {self.pos} is ambiguous')
 
         if Cytosine.CG.match(self.triplet):
