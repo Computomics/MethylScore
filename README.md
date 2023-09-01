@@ -27,7 +27,7 @@ groupwise methylation distributions for significant differences.
 
 ### Getting started
 
-All software dependencies required by MethylScore are provided in a [Docker container](quay.io/beckerlab/methylscore:nextflow), the only requirements to run MethylScore are [Nextflow](https://www.nextflow.io/),
+All software dependencies required by MethylScore are provided in a [Docker container](https://quay.io/beckerlab/methylscore:nextflow), the only requirements to run MethylScore are [Nextflow](https://www.nextflow.io/),
 and a supported container engine ([Singularity](https://www.sylabs.io/singularity/), [Docker](https://www.docker.com/), [Charliecloud](https://hpc.github.io/charliecloud/) or [Podman](https://podman.io/)).
 
 ### Pipeline input
