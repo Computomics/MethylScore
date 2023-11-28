@@ -11,6 +11,6 @@ process SORT_BAM {
 
     script:
     """
-    samtools view -@ ${task.cpus} -bh -F 0x200 -F 0x4 | samtools sort -@ ${task.cpus} -o ${bam.baseName}.sorted.bam $bam
+    samtools view -@ ${task.cpus} -bh -F 0x200 -F 0x4 $bam | samtools sort -@ ${task.cpus} -o ${bam.baseName}.sorted.bam
     """
 }
